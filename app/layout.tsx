@@ -2,14 +2,28 @@
 // Styles
 import "@rainbow-me/rainbowkit/styles.css"
 import "./globals.scss"
+
 // RainbowKit
-import { getDefaultWallets, RainbowKitProvider } from "@rainbow-me/rainbowkit"
+import {
+	getDefaultWallets,
+	RainbowKitProvider,
+	darkTheme,
+	lightTheme
+} from "@rainbow-me/rainbowkit"
+
 // Wagmi
 import { configureChains, createConfig, WagmiConfig } from "wagmi"
 import { sepolia } from "wagmi/chains"
 import { publicProvider } from "wagmi/providers/public"
+
 // React
 import { ReactNode } from "react"
+import Head from "next/head"
+
+// Font-awesome
+import "@fortawesome/fontawesome-svg-core/styles.css"
+import { config } from "@fortawesome/fontawesome-svg-core"
+config.autoAddCss = false
 
 const { chains, publicClient } = configureChains([sepolia], [publicProvider()])
 
@@ -28,9 +42,30 @@ const wagmiConfig = createConfig({
 export default function RootLayout({ children }: { children: ReactNode }) {
 	return (
 		<html lang="en">
+			<Head>
+				<link rel="preconnect" href="https://fonts.googleapis.com" />
+				<link
+					rel="preconnect"
+					href="https://fonts.gstatic.com"
+					crossOrigin="anonymous"
+				/>
+				<link
+					href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Tilt+Neon&display=swap"
+					rel="stylesheet"
+				/>
+			</Head>
 			<body>
 				<WagmiConfig config={wagmiConfig}>
-					<RainbowKitProvider chains={chains}>
+					<RainbowKitProvider
+						chains={chains}
+						theme={darkTheme({
+							accentColor: "#fff",
+							accentColorForeground: "#000",
+							borderRadius: "small",
+							overlayBlur: "small",
+							fontStack: "system"
+						})}
+					>
 						{children}
 					</RainbowKitProvider>
 				</WagmiConfig>

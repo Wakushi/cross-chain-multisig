@@ -8,7 +8,7 @@ export const Layout = ({ children }: LayoutProps) => {
 		<div className="relative">
 			<Header />
 			{children}
-			<Footer />
+			{/* <Footer /> */}
 			<ShaderGradientBackground />
 		</div>
 	)

@@ -1,3 +1,33 @@
 .hero {
 	height: 100vh;
+	color: #fff;
+	padding: 1rem;
+	gap: 1.5rem;
+
+	h1,
+	p {
+		text-align: center;
+	}
+
+	h1 {
+		font-size: 2.25rem;
+		font-weight: 700;
+		line-height: 1;
+		text-align: center;
+	}
+
+	.action_button {
+		font-family: "Inter", sans-serif;
+		background-color: #fff;
+		font-weight: 600;
+		color: #000;
+		font-size: 1.25rem;
+		padding: 1.75rem 4rem;
+		transition: 300ms ease-in-out;
+		box-shadow: 0 5px 20px 4px rgba(0, 0, 0, 0.2);
+
+		&:hover {
+			opacity: 0.8;
+		}
+	}
 }

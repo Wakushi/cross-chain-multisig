@@ -7,7 +7,3 @@ export interface Portal {
 	numberOfTransactions: string
 	lastTransaction: number
 }
-// Owners
-// Number of transactions
-// Balance
-// Last transaction

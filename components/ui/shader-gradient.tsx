@@ -13,7 +13,7 @@ export default function ShaderGradientBackground() {
 				top: 0,
 				left: 0,
 				zIndex: -1,
-				scale: 1.1
+				scale: 1.4
 			}}
 		>
 			<ShaderGradient

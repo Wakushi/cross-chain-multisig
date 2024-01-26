@@ -64,7 +64,11 @@ input {
 }
 
 .fade-in {
-	animation: fade-in 500ms ease-in-out;
+	animation: fade-in 500ms ease-in-out forwards;
+}
+
+.fade-in-delayed {
+	animation: fade-in 700ms 3s ease-in-out forwards;
 }
 
 @keyframes fade-in {

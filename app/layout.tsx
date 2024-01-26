@@ -27,6 +27,7 @@ config.autoAddCss = false
 // Shader gradient
 import ShaderGradientBackground from "../components/ui/shader-gradient"
 import ErrorContextProvider from "@/services/ErrorContext"
+import LoadingScreen from "@/components/ui/loading-screen/loading-screen"
 
 const { chains, publicClient } = configureChains([sepolia], [publicProvider()])
 
@@ -73,6 +74,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
 					</RainbowKitProvider>
 				</WagmiConfig>
 				<ShaderGradientBackground />
+				<LoadingScreen />
 			</body>
 		</html>
 	)

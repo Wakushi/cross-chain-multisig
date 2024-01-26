@@ -54,3 +54,27 @@
 body {
 	font-family: "Inter", sans-serif;
 }
+
+input {
+	color: #111;
+}
+
+.fas {
+	cursor: pointer;
+}
+
+.fade-in {
+	animation: fade-in 500ms ease-in-out;
+}
+
+@keyframes fade-in {
+	0% {
+		transform: translateY(20px);
+		opacity: 0;
+	}
+
+	100% {
+		transform: translateY(0px);
+		opacity: 1;
+	}
+}

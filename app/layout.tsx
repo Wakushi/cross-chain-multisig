@@ -7,8 +7,7 @@ import "./globals.scss"
 import {
 	getDefaultWallets,
 	RainbowKitProvider,
-	darkTheme,
-	lightTheme
+	darkTheme
 } from "@rainbow-me/rainbowkit"
 
 // Wagmi
@@ -24,6 +23,10 @@ import Head from "next/head"
 import "@fortawesome/fontawesome-svg-core/styles.css"
 import { config } from "@fortawesome/fontawesome-svg-core"
 config.autoAddCss = false
+
+// Shader gradient
+import ShaderGradientBackground from "../components/ui/shader-gradient"
+import ErrorContextProvider from "@/services/ErrorContext"
 
 const { chains, publicClient } = configureChains([sepolia], [publicProvider()])
 
@@ -54,7 +57,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
 					rel="stylesheet"
 				/>
 			</Head>
-			<body>
+			<body className="relative overflow-hidden">
 				<WagmiConfig config={wagmiConfig}>
 					<RainbowKitProvider
 						chains={chains}
@@ -66,9 +69,10 @@ export default function RootLayout({ children }: { children: ReactNode }) {
 							fontStack: "system"
 						})}
 					>
-						{children}
+						<ErrorContextProvider>{children}</ErrorContextProvider>
 					</RainbowKitProvider>
 				</WagmiConfig>
+				<ShaderGradientBackground />
 			</body>
 		</html>
 	)

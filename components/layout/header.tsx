@@ -3,6 +3,7 @@ import portalLogo from "../../assets/logo/portalsig.png"
 import classes from "./header.module.scss"
 import { ConnectButton } from "@rainbow-me/rainbowkit"
 import Link from "next/link"
+import NavigationMenu from "../navigation-menu/navigation-menu"
 
 export const Header = () => {
 	return (
@@ -17,7 +18,10 @@ export const Header = () => {
 					<div className={classes.logo_text}>portalsig</div>
 				</div>
 			</Link>
-			<ConnectButton />
+			<div className="flex items-center gap-4">
+				<ConnectButton />
+				<NavigationMenu />
+			</div>
 		</header>
 	)
 }

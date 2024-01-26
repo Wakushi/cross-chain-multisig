@@ -29,6 +29,7 @@ import ShaderGradientBackground from "../components/ui/shader-gradient"
 import ErrorContextProvider from "@/services/ErrorContext"
 import LoadingScreen from "@/components/ui/loading-screen/loading-screen"
 import { Toaster } from "@/components/ui/toaster"
+import { Layout } from "@/components/layout/layout"
 
 const { chains, publicClient } = configureChains([sepolia], [publicProvider()])
 
@@ -71,7 +72,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
 							fontStack: "system"
 						})}
 					>
-						<ErrorContextProvider>{children}</ErrorContextProvider>
+						<ErrorContextProvider>
+							<Layout>{children}</Layout>
+						</ErrorContextProvider>
 					</RainbowKitProvider>
 				</WagmiConfig>
 				<ShaderGradientBackground />

@@ -1,6 +1,14 @@
 .create_page {
 	height: 100vh;
 
+	.loader_container {
+		h2 {
+			color: #fff;
+			transform: translateY(-150px);
+			font-size: 2rem;
+			font-weight: 700;
+		}
+	}
 	.create_card {
 		background-color: #111111c9;
 		color: #fff;
@@ -29,6 +37,7 @@
 
 			input {
 				background-color: transparent;
+				color: #fff;
 				width: 100%;
 			}
 		}

@@ -28,6 +28,7 @@ config.autoAddCss = false
 import ShaderGradientBackground from "../components/ui/shader-gradient"
 import ErrorContextProvider from "@/services/ErrorContext"
 import LoadingScreen from "@/components/ui/loading-screen/loading-screen"
+import { Toaster } from "@/components/ui/toaster"
 
 const { chains, publicClient } = configureChains([sepolia], [publicProvider()])
 
@@ -75,6 +76,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
 				</WagmiConfig>
 				<ShaderGradientBackground />
 				<LoadingScreen />
+				<Toaster />
 			</body>
 		</html>
 	)

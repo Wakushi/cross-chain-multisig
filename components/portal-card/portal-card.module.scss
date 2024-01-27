@@ -1,0 +1,35 @@
+.portal_card {
+	background-color: #111111c9;
+	color: #fff;
+
+	transition: 200ms ease-in-out;
+
+	h3 {
+		font-size: 1rem;
+		font-weight: 600;
+		color: #fff;
+	}
+
+	.owner_list {
+		li {
+			font-weight: 300;
+		}
+	}
+
+	.title {
+		font-size: 1.5rem;
+		font-weight: 700;
+	}
+
+	&.small {
+		max-width: 900px;
+		cursor: pointer;
+
+		&:hover,
+		&:focus-visible {
+			transform: translateY(-5px);
+			background-color: #111111;
+			box-shadow: 4px 4px 0px #fff;
+		}
+	}
+}

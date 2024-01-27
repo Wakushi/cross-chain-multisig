@@ -1,0 +1,10 @@
+.copy_icon {
+	cursor: pointer;
+	opacity: 0.3;
+	transition: opacity 0.2s ease-in-out;
+	margin: 0 0.5rem;
+
+	&:hover {
+		opacity: 1;
+	}
+}

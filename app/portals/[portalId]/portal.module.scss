@@ -1,5 +1,4 @@
 .portal_page {
-	min-height: 100vh;
 	padding: 8rem 3rem;
 
 	.fas {
@@ -10,5 +9,9 @@
 			transform: translateX(-3px);
 			opacity: 0.8;
 		}
+	}
+
+	.portal_page_content {
+		position: relative;
 	}
 }

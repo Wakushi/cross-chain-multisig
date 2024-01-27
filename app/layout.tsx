@@ -30,6 +30,7 @@ import ErrorContextProvider from "@/services/ErrorContext"
 import LoadingScreen from "@/components/ui/loading-screen/loading-screen"
 import { Toaster } from "@/components/ui/toaster"
 import { Layout } from "@/components/layout/layout"
+import PortalContextProvider from "@/services/PortalContext"
 
 const { chains, publicClient } = configureChains([sepolia], [publicProvider()])
 
@@ -73,7 +74,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
 						})}
 					>
 						<ErrorContextProvider>
-							<Layout>{children}</Layout>
+							<PortalContextProvider>
+								<Layout>{children}</Layout>
+							</PortalContextProvider>
 						</ErrorContextProvider>
 					</RainbowKitProvider>
 				</WagmiConfig>

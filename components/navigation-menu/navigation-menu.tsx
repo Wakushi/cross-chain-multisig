@@ -11,7 +11,7 @@ import Link from "next/link"
 
 export default function NavigationMenu() {
 	return (
-		<Menubar style={{ color: "#000" }}>
+		<Menubar>
 			<MenubarMenu>
 				<MenubarTrigger style={{ cursor: "pointer" }}>
 					Portals

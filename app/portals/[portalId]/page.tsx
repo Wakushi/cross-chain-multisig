@@ -1,15 +1,23 @@
 "use client"
+// Font Awesome
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
-import classes from "./portal.module.scss"
 import { faBackward } from "@fortawesome/free-solid-svg-icons"
-import Link from "next/link"
-import TooltipWrapper from "@/components/ui/custom-tooltip"
-import { PortalContext } from "@/services/PortalContext"
+// Styles
+import classes from "./portal.module.scss"
+// Next / React
 import { useContext, useEffect, useState } from "react"
-import { Portal } from "@/types/Portal"
-import { Address } from "viem"
+import Link from "next/link"
+// Components
+import TooltipWrapper from "@/components/ui/custom-tooltip"
 import LoaderHive from "@/components/ui/loader-hive/loader-hive"
 import PortalCard from "@/components/portal-card/portal-card"
+
+// Services
+import { PortalContext } from "@/services/PortalContext"
+// Utils
+import { Address } from "viem"
+// Types
+import { Portal } from "@/types/Portal"
 import { PortalCardView } from "@/types/PortalCardProps"
 
 export default function PortalPage({

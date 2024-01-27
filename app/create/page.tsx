@@ -215,9 +215,7 @@ export default function CreatePage() {
 							</div>
 						</CardContent>
 						<CardFooter>
-							<Button variant="secondary" onClick={handleSubmit}>
-								Submit
-							</Button>
+							<Button onClick={handleSubmit}>Submit</Button>
 						</CardFooter>
 					</Card>
 				</>

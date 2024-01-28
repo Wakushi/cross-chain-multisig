@@ -1,9 +1,8 @@
 import { createContext, ReactNode, useEffect, useState } from "react"
 import { Address } from "viem"
-import { PORTALSIG_WALLET_CONTRACT_ABI } from "@/constants/constants"
-import { readContract, fetchToken, getNetwork } from "@wagmi/core"
 import { registeredChains } from "./data/chains"
 import { Token } from "@/types/Token"
+import { Alchemy, Network, TokenMetadataResponse } from "alchemy-sdk"
 
 interface ChainSupportedTokens {
 	chainId: string
@@ -17,10 +16,17 @@ interface TokenContextProviderProps {
 
 interface TokenContextProps {
 	allSupportedTokens: ChainSupportedTokens[]
+	getAllAddressTokens: (
+		address: Address,
+		network?: Network
+	) => Promise<Token[]>
 }
 
 const TokenContext = createContext<TokenContextProps>({
-	allSupportedTokens: []
+	allSupportedTokens: [],
+	getAllAddressTokens: async () => {
+		return []
+	}
 })
 export default function TokenContextProvider(props: TokenContextProviderProps) {
 	const [allSupportedTokens, setAllSupportedTokens] = useState<
@@ -29,48 +35,59 @@ export default function TokenContextProvider(props: TokenContextProviderProps) {
 
 	useEffect(() => {
 		async function getChainsSupportedTokens() {
-			const { chain } = getNetwork()
 			const allSupportedTokens: ChainSupportedTokens[] = []
 			for (let registeredChain of registeredChains) {
-				const supportedTokens: Token[] = []
-				if (+registeredChain.chainId !== chain?.id) {
-					const supportedTokensAddresses = await getSupportedTokens(
-						registeredChain.chainSelector
-					)
-					for (let tokenAddress of supportedTokensAddresses) {
-						const token = await fetchToken({
-							address: tokenAddress
-						})
-						supportedTokens.push(token)
-					}
-				}
 				allSupportedTokens.push({
 					chainId: registeredChain.chainId,
 					chainSelector: registeredChain.chainSelector,
-					supportedTokens: supportedTokens
+					supportedTokens: registeredChain.supportedTokens
 				})
 			}
 			setAllSupportedTokens(allSupportedTokens)
-			console.log("Fetched all tokens !", allSupportedTokens)
 		}
 
 		getChainsSupportedTokens()
 	}, [])
 
-	async function getSupportedTokens(
-		chainSelector: string
-	): Promise<Address[]> {
-		const supportedTokens: any = await readContract({
-			address: "0x7e41fED39d9fe7b52271c2866135cEE767DC780f",
-			abi: PORTALSIG_WALLET_CONTRACT_ABI,
-			functionName: "getSupportedTokens",
-			args: [chainSelector]
+	async function getAllAddressTokens(
+		address: Address,
+		network?: Network
+	): Promise<Token[]> {
+		const alchemy = new Alchemy({
+			apiKey: process.env.NEXT_PUBLIC_ALCHEMY_API_KEY,
+			network: network ? network : Network.ETH_SEPOLIA
 		})
-		return supportedTokens
+		const balances = await alchemy.core.getTokenBalances(address)
+		const nonZeroBalances = balances.tokenBalances.filter((token: any) => {
+			return (
+				token.tokenBalance !==
+				"0x0000000000000000000000000000000000000000000000000000000000000000"
+			)
+		})
+
+		const addressTokens: Token[] = []
+		for (let token of nonZeroBalances) {
+			let balance: any = token.tokenBalance
+			const metadata: TokenMetadataResponse =
+				await alchemy.core.getTokenMetadata(token.contractAddress)
+			if (balance) {
+				balance = balance / Math.pow(10, metadata.decimals || 18)
+				balance = balance.toFixed(2)
+			}
+			addressTokens.push({
+				address: token.contractAddress as Address,
+				name: metadata.name || "",
+				symbol: metadata.symbol || "",
+				decimals: metadata.decimals || 18,
+				balance: balance
+			})
+		}
+		return addressTokens
 	}
 
 	const context = {
-		allSupportedTokens
+		allSupportedTokens,
+		getAllAddressTokens
 	}
 
 	return (

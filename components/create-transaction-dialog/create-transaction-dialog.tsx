@@ -35,10 +35,9 @@ import { fetchBalance, getNetwork } from "@wagmi/core"
 import * as z from "zod"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
-import { registeredChains } from "@/services/data/chains"
+import { Chain, registeredChains } from "@/services/data/chains"
 import { TokenContext } from "@/services/TokenContext"
 import { Token } from "@/types/Token"
-import { Alchemy, Network, TokenMetadataResponse } from "alchemy-sdk"
 import LoaderSmall from "../ui/loader-small/loader-small"
 
 enum PayFeesIn {
@@ -66,15 +65,19 @@ const formSchema = z.object({
 export default function CreateTransactionDialog({
 	portalSigAddress
 }: CreateTransactionDialogProps) {
+	// Context & Utils
+	const { chain } = getNetwork()
+	const { allSupportedTokens, getAllAddressTokens } = useContext(TokenContext)
+	// State
 	const [isLoading, setIsLoading] = useState<boolean>(true)
 	const [selectedChain, setSelectedChain] = useState<string>("")
 	const [selectedChainSupportedTokens, setSelectedChainSupportedTokens] =
 		useState<Token[]>([])
-	const [selectedToken, setSelectedToken] = useState<Token>()
+	const [selectedToken, setSelectedToken] = useState<string>("")
 	const [selectedTokenBalance, setSelectedTokenBalance] = useState<string>("")
-	const { allSupportedTokens } = useContext(TokenContext)
-	const { chain } = getNetwork()
 
+	// React Hook Forms
+	const { reset } = useForm()
 	const form = useForm<z.infer<typeof formSchema>>({
 		resolver: zodResolver(formSchema),
 		defaultValues: {
@@ -90,39 +93,37 @@ export default function CreateTransactionDialog({
 
 	useEffect(() => {
 		if (portalSigAddress && allSupportedTokens.length) {
-			getPortalTokens(portalSigAddress).then((portalTokens: Token[]) => {
-				allSupportedTokens.map((chainSupportedTokens) => {
-					if (+chainSupportedTokens.chainId === chain?.id) {
-						chainSupportedTokens.supportedTokens = [...portalTokens]
-					}
-				})
-				setIsLoading(false)
-			})
+			getAllAddressTokens(portalSigAddress).then(
+				(portalTokens: Token[]) => {
+					allSupportedTokens.map((chainSupportedTokens) => {
+						if (+chainSupportedTokens.chainId === chain?.id) {
+							chainSupportedTokens.supportedTokens = [
+								...portalTokens
+							]
+						}
+					})
+					setIsLoading(false)
+				}
+			)
 		}
 	}, [allSupportedTokens])
 
 	useEffect(() => {
-		const chainSupportedTokens = getChainSupportedTokens(selectedChain)
-		setSelectedChainSupportedTokens(chainSupportedTokens)
+		resetTokenField()
+		setSelectedChainSupportedTokens(getChainSupportedTokens(selectedChain))
 	}, [selectedChain])
 
-	function onSubmit(values: z.infer<typeof formSchema>) {
-		console.log("Submitted!")
-		console.log(values)
-	}
-
-	async function onTokenChange(tokenAddress: Address) {
-		const selectedToken = selectedChainSupportedTokens.find(
-			(token) => token.address === tokenAddress
-		)
+	useEffect(() => {
 		if (selectedToken) {
-			setSelectedToken(selectedToken)
+			const token = getTokenByAddress(selectedToken as Address)
+			if (token) {
+				updateDisplayedTokenBalance(token)
+			}
 		}
-		const balance = await fetchBalance({
-			address: portalSigAddress,
-			token: tokenAddress
-		})
-		setSelectedTokenBalance(balance?.value.toString())
+	}, [selectedToken])
+
+	function onSubmit(values: z.infer<typeof formSchema>) {
+		console.log(values)
 	}
 
 	function getChainSupportedTokens(chainSelector: string): Token[] {
@@ -135,38 +136,56 @@ export default function CreateTransactionDialog({
 		return []
 	}
 
-	async function getPortalTokens(address: Address): Promise<Token[]> {
-		const config = {
-			apiKey: process.env.NEXT_PUBLIC_ALCHEMY_API_KEY,
-			network: Network.ETH_SEPOLIA
-		}
-		const alchemy = new Alchemy(config)
-		const balances = await alchemy.core.getTokenBalances(address)
-		const nonZeroBalances = balances.tokenBalances.filter((token: any) => {
-			return (
-				token.tokenBalance !==
-				"0x0000000000000000000000000000000000000000000000000000000000000000"
-			)
-		})
+	function getTokenByAddress(tokenAddress: Address): Token | undefined {
+		return allSupportedTokens
+			.map((chain) => chain.supportedTokens)
+			.flat()
+			.find((token) => token.address === tokenAddress)
+	}
 
-		const portalTokens: Token[] = []
-		for (let token of nonZeroBalances) {
-			let balance: any = token.tokenBalance
-			const metadata: TokenMetadataResponse =
-				await alchemy.core.getTokenMetadata(token.contractAddress)
+	async function updateDisplayedTokenBalance(token: Token) {
+		let balance = 0
+		if (isTokenFromPortalChain(token.address)) {
+			balance = Number(token?.balance || 0)
+		} else {
+			balance = Number((await fetchTokenBalance(token))?.value || 0)
 			if (balance) {
-				balance = balance / Math.pow(10, metadata.decimals || 18)
-				balance = balance.toFixed(2)
+				balance = balance / Math.pow(10, token.decimals || 18)
 			}
-			portalTokens.push({
-				address: token.contractAddress as Address,
-				name: metadata.name || "",
-				symbol: metadata.symbol || "",
-				decimals: metadata.decimals || 18,
-				balance: balance
-			})
 		}
-		return portalTokens
+		setSelectedTokenBalance(balance.toFixed(2))
+	}
+
+	function isTokenFromPortalChain(tokenAddress: Address): boolean {
+		const portalChain = getPortalChain()
+		if (portalChain) {
+			const portalChainSupportedTokens = getChainSupportedTokens(
+				portalChain.chainSelector
+			)
+			return !!portalChainSupportedTokens.find(
+				(token) => token.address === tokenAddress
+			)
+		}
+		return false
+	}
+
+	function getPortalChain(): Chain | undefined {
+		return registeredChains.find(
+			(registeredChain) => +registeredChain.chainId === chain?.id
+		)
+	}
+
+	async function fetchTokenBalance(token: Token) {
+		return await fetchBalance({
+			address: portalSigAddress,
+			token: token.address
+		})
+	}
+
+	function resetTokenField(): void {
+		reset({ token: "" })
+		setSelectedToken("")
+		setSelectedTokenBalance("")
 	}
 
 	return (
@@ -187,6 +206,7 @@ export default function CreateTransactionDialog({
 							onSubmit={form.handleSubmit(onSubmit)}
 							className="space-y-8"
 						>
+							{/* DESTINATION ADDRESS */}
 							<FormField
 								control={form.control}
 								name="destination"
@@ -207,6 +227,7 @@ export default function CreateTransactionDialog({
 									</FormItem>
 								)}
 							/>
+							{/* DESTINATION BLOCKCHAIN */}
 							{isLoading ? (
 								<LoaderSmall />
 							) : (
@@ -259,56 +280,60 @@ export default function CreateTransactionDialog({
 									)}
 								/>
 							)}
-							{!!form.getValues().destinationChainSelector && (
-								<FormField
-									control={form.control}
-									name="token"
-									render={({ field }) => (
-										<FormItem>
-											<FormLabel>Token</FormLabel>
-											<Select
-												onValueChange={(value) => {
-													field.onChange(value)
-													onTokenChange(
-														value as Address
-													)
-												}}
-												defaultValue={field.value}
-											>
-												<FormControl>
-													<SelectTrigger>
-														<SelectValue placeholder="Select a token to send" />
-													</SelectTrigger>
-												</FormControl>
-												<SelectContent>
-													{selectedChainSupportedTokens.map(
-														(supportedToken) => (
-															<SelectItem
-																key={
-																	supportedToken.address
-																}
-																value={
-																	supportedToken.address
-																}
-															>
-																{
-																	supportedToken.name
-																}
-															</SelectItem>
-														)
-													)}
-												</SelectContent>
-											</Select>
-											<FormDescription>
-												{selectedTokenBalance
-													? `Balance: ${selectedTokenBalance} ${selectedToken?.symbol}`
-													: ""}
-											</FormDescription>
-											<FormMessage />
-										</FormItem>
-									)}
-								/>
-							)}
+							{/* TOKEN TO SEND */}
+							{!!form.getValues().destinationChainSelector &&
+								!isLoading && (
+									<FormField
+										control={form.control}
+										name="token"
+										render={({ field }) => (
+											<FormItem>
+												<FormLabel>Token</FormLabel>
+												<Select
+													onValueChange={(value) => {
+														field.onChange(value)
+														setSelectedToken(value)
+													}}
+													value={selectedToken}
+												>
+													<FormControl>
+														<SelectTrigger>
+															<SelectValue placeholder="Select a token to send" />
+														</SelectTrigger>
+													</FormControl>
+													<SelectContent>
+														{selectedChainSupportedTokens.map(
+															(
+																supportedToken
+															) => (
+																<SelectItem
+																	key={
+																		supportedToken.address
+																	}
+																	value={supportedToken.address.toString()}
+																>
+																	{
+																		supportedToken.name
+																	}
+																</SelectItem>
+															)
+														)}
+													</SelectContent>
+												</Select>
+												<FormDescription>
+													{selectedToken
+														? `Balance: ${selectedTokenBalance} ${
+																getTokenByAddress(
+																	selectedToken as Address
+																)?.symbol
+														  }`
+														: ""}
+												</FormDescription>
+												<FormMessage />
+											</FormItem>
+										)}
+									/>
+								)}
 							<Button
 								type="submit"
 								onClick={() => {

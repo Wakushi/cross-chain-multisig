@@ -55,7 +55,7 @@ export default function PortalPage({
 				<LoaderHive />
 			) : (
 				<div
-					className={`${classes.portal_page_content} flex items-center justify-center fade-in`}
+					className={`${classes.portal_page_content} flex flex-wrap items-center justify-center fade-in`}
 				>
 					<PortalCard portal={portal} view={PortalCardView.DETAIL} />
 				</div>

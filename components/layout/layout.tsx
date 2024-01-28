@@ -1,5 +1,4 @@
 import { Header } from "./header"
-import { Footer } from "./footer"
 import { ReactNode } from "react"
 
 interface LayoutProps {
@@ -8,7 +7,7 @@ interface LayoutProps {
 
 export const Layout = ({ children }: LayoutProps) => {
 	return (
-		<div>
+		<div className="overflow-hidden">
 			<Header />
 			<main>{children}</main>
 			{/* <Footer /> */}

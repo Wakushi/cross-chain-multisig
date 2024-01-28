@@ -4,8 +4,8 @@ import classes from "./header.module.scss"
 // Components
 import Link from "next/link"
 import Image from "next/image"
-import { ConnectButton } from "@rainbow-me/rainbowkit"
 import NavigationMenu from "../navigation-menu/navigation-menu"
+import CustomConnectButton from "../ui/custom-connect-button"
 
 export const Header = () => {
 	return (
@@ -21,7 +21,7 @@ export const Header = () => {
 				</div>
 			</Link>
 			<div className="flex items-center gap-4">
-				<ConnectButton />
+				<CustomConnectButton />
 				<NavigationMenu />
 			</div>
 		</header>

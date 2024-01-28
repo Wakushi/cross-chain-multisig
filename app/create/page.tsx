@@ -107,6 +107,7 @@ export default function CreatePage() {
 			})
 			navigateToPortals()
 		} catch (error: any) {
+			setIsLoading(false)
 			toast({
 				title: "Something went wrong !",
 				description: error.message

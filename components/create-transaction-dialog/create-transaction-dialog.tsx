@@ -25,12 +25,24 @@ import {
 	FormLabel,
 	FormMessage
 } from "@/components/ui/form"
+import { useToast } from "@/components/ui/use-toast"
 import { Input } from "@/components/ui/input"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { Checkbox } from "@/components/ui/checkbox"
+
 // React
 import { useContext, useEffect, useState } from "react"
+
 // Wagmi / Viem
-import { Address } from "viem"
-import { fetchBalance, getNetwork } from "@wagmi/core"
+import { Address, parseEther } from "viem"
+import {
+	fetchBalance,
+	getNetwork,
+	prepareWriteContract,
+	writeContract,
+	waitForTransaction
+} from "@wagmi/core"
+
 // React Hook Forms
 import * as z from "zod"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -39,6 +51,7 @@ import { Chain, registeredChains } from "@/services/data/chains"
 import { TokenContext } from "@/services/TokenContext"
 import { Token } from "@/types/Token"
 import LoaderSmall from "../ui/loader-small/loader-small"
+import { PORTALSIG_WALLET_CONTRACT_ABI } from "@/constants/constants"
 
 enum PayFeesIn {
 	NATIVE = 0,
@@ -56,7 +69,7 @@ const formSchema = z.object({
 		.max(42),
 	token: z.string().min(42, { message: "Invalid address length." }).max(42),
 	destinationChainSelector: z.string(),
-	amount: z.number(),
+	amount: z.string(),
 	data: z.string(),
 	executesOnRequirementMet: z.boolean(),
 	payFeesIn: z.number()
@@ -67,7 +80,9 @@ export default function CreateTransactionDialog({
 }: CreateTransactionDialogProps) {
 	// Context & Utils
 	const { chain } = getNetwork()
+	const { toast } = useToast()
 	const { allSupportedTokens, getAllAddressTokens } = useContext(TokenContext)
+
 	// State
 	const [isLoading, setIsLoading] = useState<boolean>(true)
 	const [selectedChain, setSelectedChain] = useState<string>("")
@@ -84,10 +99,10 @@ export default function CreateTransactionDialog({
 			destination: "",
 			token: "",
 			destinationChainSelector: "",
-			amount: 0,
+			amount: "",
 			data: "",
 			executesOnRequirementMet: false,
-			payFeesIn: PayFeesIn.NATIVE
+			payFeesIn: 0
 		}
 	})
 
@@ -123,7 +138,63 @@ export default function CreateTransactionDialog({
 	}, [selectedToken])
 
 	function onSubmit(values: z.infer<typeof formSchema>) {
-		console.log(values)
+		const {
+			destination,
+			destinationChainSelector,
+			token,
+			amount,
+			data,
+			executesOnRequirementMet,
+			payFeesIn
+		} = values
+		createTransaction(
+			destination,
+			destinationChainSelector,
+			token,
+			amount,
+			data,
+			executesOnRequirementMet,
+			payFeesIn.toString()
+		)
+	}
+
+	async function createTransaction(
+		destination: string,
+		destinationChainSelector: string,
+		token: string,
+		amount: string,
+		data: string,
+		executesOnRequirementMet: boolean,
+		payFeesIn: string
+	): Promise<void> {
+		try {
+			const { request } = await prepareWriteContract({
+				address: portalSigAddress,
+				abi: PORTALSIG_WALLET_CONTRACT_ABI,
+				functionName: "createTransaction",
+				args: [
+					destination,
+					token,
+					destinationChainSelector,
+					parseEther(amount),
+					data,
+					executesOnRequirementMet,
+					payFeesIn,
+					0
+				]
+			})
+			const { hash } = await writeContract(request)
+			const result = await waitForTransaction({ hash })
+			toast({
+				title: "Transaction created !",
+				description: result.contractAddress
+			})
+		} catch (error: any) {
+			toast({
+				title: "Something went wrong !",
+				description: error.message
+			})
+		}
 	}
 
 	function getChainSupportedTokens(chainSelector: string): Token[] {
@@ -188,12 +259,19 @@ export default function CreateTransactionDialog({
 		setSelectedTokenBalance("")
 	}
 
+	function isExternalChain(chainSelector: string): boolean {
+		return (
+			chainSelector !== "" &&
+			chainSelector !== getPortalChain()?.chainSelector
+		)
+	}
+
 	return (
 		<Dialog>
 			<DialogTrigger asChild>
 				<Button>Create transaction</Button>
 			</DialogTrigger>
-			<DialogContent className="sm:max-w-[425px]">
+			<DialogContent className="sm:max-w-[525px] sm:max-h-[700px] overflow-auto custom-scrollbar">
 				<DialogHeader>
 					<DialogTitle>Create transaction</DialogTitle>
 					<DialogDescription>
@@ -334,6 +412,119 @@ export default function CreateTransactionDialog({
 										)}
 									/>
 								)}
+							{/* DESTINATION ADDRESS */}
+							<FormField
+								control={form.control}
+								name="amount"
+								render={({ field }) => (
+									<FormItem>
+										<FormLabel>Amount</FormLabel>
+										<FormControl>
+											<Input
+												type="number"
+												placeholder="0"
+												{...field}
+											/>
+										</FormControl>
+										<FormDescription>
+											Amount of tokens to send.
+										</FormDescription>
+										<FormMessage />
+									</FormItem>
+								)}
+							/>
+							{/* DESTINATION ADDRESS */}
+							<FormField
+								control={form.control}
+								name="data"
+								render={({ field }) => (
+									<FormItem>
+										<FormLabel>Data</FormLabel>
+										<FormControl>
+											<Input
+												placeholder="0x00"
+												{...field}
+											/>
+										</FormControl>
+										<FormDescription>
+											The data to send with the
+											transaction.
+										</FormDescription>
+										<FormMessage />
+									</FormItem>
+								)}
+							/>
+							{/* EXECUTES ON REQUIREMENT */}
+							<FormField
+								control={form.control}
+								name="executesOnRequirementMet"
+								render={({ field }) => (
+									<FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4 shadow">
+										<FormControl>
+											<Checkbox
+												checked={field.value}
+												onCheckedChange={field.onChange}
+											/>
+										</FormControl>
+										<div className="space-y-1 leading-none">
+											<FormLabel>
+												Execute transaction
+												automatically
+											</FormLabel>
+											<FormDescription>
+												Transaction will be executed
+												when enough signatures are
+												collected.
+											</FormDescription>
+										</div>
+									</FormItem>
+								)}
+							/>
+							{/* EXECUTES ON REQUIREMENT */}
+							{isExternalChain(selectedChain) && (
+								<FormField
+									control={form.control}
+									name="payFeesIn"
+									render={({ field }) => (
+										<FormItem className="space-y-3">
+											<FormLabel>
+												Pay cross-chain fees in
+											</FormLabel>
+											<FormControl>
+												<RadioGroup
+													onValueChange={
+														field.onChange
+													}
+													defaultValue={field.value.toString()}
+													className="flex flex-col space-y-1"
+												>
+													<FormItem className="flex items-center space-x-3 space-y-0">
+														<FormControl>
+															<RadioGroupItem
+																value={PayFeesIn.NATIVE.toString()}
+															/>
+														</FormControl>
+														<FormLabel className="font-normal">
+															Native token
+														</FormLabel>
+													</FormItem>
+													<FormItem className="flex items-center space-x-3 space-y-0">
+														<FormControl>
+															<RadioGroupItem
+																value={PayFeesIn.LINK.toString()}
+															/>
+														</FormControl>
+														<FormLabel className="font-normal">
+															Link token
+														</FormLabel>
+													</FormItem>
+												</RadioGroup>
+											</FormControl>
+											<FormMessage />
+										</FormItem>
+									)}
+								/>
+							)}
 							<Button
 								type="submit"
 								onClick={() => {

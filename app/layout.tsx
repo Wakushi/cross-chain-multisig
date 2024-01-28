@@ -49,7 +49,7 @@ const wagmiConfig = createConfig({
 
 export default function RootLayout({ children }: { children: ReactNode }) {
 	return (
-		<html lang="en">
+		<html lang="en" className="custom-scrollbar">
 			<Head>
 				<link rel="preconnect" href="https://fonts.googleapis.com" />
 				<link
@@ -62,7 +62,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
 					rel="stylesheet"
 				/>
 			</Head>
-			<body className="relative overflow-hidden">
+			<body className="relative">
 				<WagmiConfig config={wagmiConfig}>
 					<RainbowKitProvider
 						chains={chains}

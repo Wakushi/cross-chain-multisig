@@ -1,5 +1,5 @@
 export const PORTALSIG_FACTORY_CONTRACT_ADDRESS =
-	"0x344Ae0d69C104C27547117C8e02bd9716b677587"
+	"0x834e8C4293EEa77A742F6E8657FeD3DF8d80BDc7"
 
 export const SEPOLIA_CCIP_ROUTER_CONTRACT_ADDRESS =
 	"0x0BF3dE8c5D3e8A2B34D2BEeB17ABfCeBaf363A59"
@@ -488,6 +488,55 @@ export const PORTALSIG_WALLET_CONTRACT_ABI = [
 		type: "function"
 	},
 	{
+		inputs: [
+			{
+				internalType: "address",
+				name: "_receiver",
+				type: "address"
+			},
+			{
+				internalType: "address",
+				name: "_token",
+				type: "address"
+			},
+			{
+				internalType: "uint256",
+				name: "_amount",
+				type: "uint256"
+			},
+			{
+				internalType: "bytes",
+				name: "_data",
+				type: "bytes"
+			},
+			{
+				internalType: "enum Portal.PayFeesIn",
+				name: "_payFeesIn",
+				type: "uint8"
+			},
+			{
+				internalType: "uint256",
+				name: "_gasLimit",
+				type: "uint256"
+			},
+			{
+				internalType: "uint64",
+				name: "_destinationChainSelector",
+				type: "uint64"
+			}
+		],
+		name: "getMessageFee",
+		outputs: [
+			{
+				internalType: "uint256",
+				name: "fees",
+				type: "uint256"
+			}
+		],
+		stateMutability: "view",
+		type: "function"
+	},
+	{
 		inputs: [],
 		name: "getOwners",
 		outputs: [
@@ -508,6 +557,25 @@ export const PORTALSIG_WALLET_CONTRACT_ABI = [
 				internalType: "uint256",
 				name: "requiredConfirmationsAmount",
 				type: "uint256"
+			}
+		],
+		stateMutability: "view",
+		type: "function"
+	},
+	{
+		inputs: [
+			{
+				internalType: "uint64",
+				name: "_chainSelector",
+				type: "uint64"
+			}
+		],
+		name: "getSupportedTokens",
+		outputs: [
+			{
+				internalType: "address[]",
+				name: "tokens",
+				type: "address[]"
 			}
 		],
 		stateMutability: "view",
@@ -675,6 +743,25 @@ export const PORTALSIG_WALLET_CONTRACT_ABI = [
 			{
 				internalType: "bool",
 				name: "",
+				type: "bool"
+			}
+		],
+		stateMutability: "view",
+		type: "function"
+	},
+	{
+		inputs: [
+			{
+				internalType: "uint64",
+				name: "_chainSelector",
+				type: "uint64"
+			}
+		],
+		name: "isChainSupported",
+		outputs: [
+			{
+				internalType: "bool",
+				name: "isSupported",
 				type: "bool"
 			}
 		],

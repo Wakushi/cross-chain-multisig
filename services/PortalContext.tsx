@@ -31,7 +31,7 @@ export default function PortalContextProvider(
 	props: PortalContextProviderProps
 ) {
 	const [portals, setPortals] = useState<Portal[]>([])
-	const { address, isConnected } = useAccount()
+	const { address } = useAccount()
 
 	async function getPortalSig(portalAddress: Address): Promise<Portal> {
 		const savedPortal = findLocalPortal(portalAddress)

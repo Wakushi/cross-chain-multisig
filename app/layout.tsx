@@ -31,11 +31,12 @@ import LoadingScreen from "@/components/ui/loading-screen/loading-screen"
 import { Toaster } from "@/components/ui/toaster"
 import { Layout } from "@/components/layout/layout"
 import PortalContextProvider from "@/services/PortalContext"
+import TokenContextProvider from "@/services/TokenContext"
 
 const { chains, publicClient } = configureChains([sepolia], [publicProvider()])
 
 const { connectors } = getDefaultWallets({
-	appName: "Cross-Chain Multisig",
+	appName: "PortalSig",
 	projectId: process.env.NEXT_PUBLIC_WALLET_CONNECT_ID ?? "",
 	chains
 })
@@ -69,13 +70,14 @@ export default function RootLayout({ children }: { children: ReactNode }) {
 							accentColor: "#fff",
 							accentColorForeground: "#000",
 							borderRadius: "small",
-							overlayBlur: "small",
-							fontStack: "system"
+							overlayBlur: "small"
 						})}
 					>
 						<ErrorContextProvider>
 							<PortalContextProvider>
-								<Layout>{children}</Layout>
+								<TokenContextProvider>
+									<Layout>{children}</Layout>
+								</TokenContextProvider>
 							</PortalContextProvider>
 						</ErrorContextProvider>
 					</RainbowKitProvider>

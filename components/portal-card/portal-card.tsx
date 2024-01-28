@@ -8,17 +8,6 @@ import {
 	CardHeader,
 	CardTitle
 } from "@/components/ui/card"
-import {
-	Dialog,
-	DialogContent,
-	DialogDescription,
-	DialogFooter,
-	DialogHeader,
-	DialogTitle,
-	DialogTrigger
-} from "@/components/ui/dialog"
-import { Label } from "@/components/ui/label"
-import { Button } from "../ui/button"
 import Copy from "../ui/copy/copy"
 // Utils
 import { getShortenedAddress } from "@/lib/utils"
@@ -31,7 +20,7 @@ import { PortalCardProps, PortalCardView } from "@/types/PortalCardProps"
 // Next / React
 import Image from "next/image"
 import { useRouter } from "next/navigation"
-import { Input } from "../ui/input"
+import CreateTransactionDialog from "../create-transaction-dialog/create-transaction-dialog"
 
 export default function PortalCard({ portal, view }: PortalCardProps) {
 	const { address, owners, balance, numberOfTransactions, lastTransaction } =
@@ -88,51 +77,7 @@ export default function PortalCard({ portal, view }: PortalCardProps) {
 					/>
 				</div>
 				{isDetailedView() && (
-					<Dialog>
-						<DialogTrigger asChild>
-							<Button>Create transaction</Button>
-						</DialogTrigger>
-						<DialogContent className="sm:max-w-[425px]">
-							<DialogHeader>
-								<DialogTitle>Edit profile</DialogTitle>
-								<DialogDescription>
-									Make changes to your profile here. Click
-									save when you're done.
-								</DialogDescription>
-							</DialogHeader>
-							<div className="grid gap-4 py-4">
-								<div className="grid grid-cols-4 items-center gap-4">
-									<Label
-										htmlFor="name"
-										className="text-right"
-									>
-										Name
-									</Label>
-									<Input
-										id="name"
-										value="Pedro Duarte"
-										className="col-span-3"
-									/>
-								</div>
-								<div className="grid grid-cols-4 items-center gap-4">
-									<Label
-										htmlFor="username"
-										className="text-right"
-									>
-										Username
-									</Label>
-									<Input
-										id="username"
-										value="@peduarte"
-										className="col-span-3"
-									/>
-								</div>
-							</div>
-							<DialogFooter>
-								<Button type="submit">Save changes</Button>
-							</DialogFooter>
-						</DialogContent>
-					</Dialog>
+					<CreateTransactionDialog portalSigAddress={address} />
 				)}
 			</CardFooter>
 		</Card>

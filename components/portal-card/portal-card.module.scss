@@ -1,7 +1,4 @@
 .portal_card {
-	background-color: #111111c9;
-	color: #fff;
-
 	transition: 200ms ease-in-out;
 
 	h3 {
@@ -28,7 +25,6 @@
 		&:hover,
 		&:focus-visible {
 			transform: translateY(-5px);
-			background-color: #111111;
 			box-shadow: 4px 4px 0px #fff;
 		}
 	}

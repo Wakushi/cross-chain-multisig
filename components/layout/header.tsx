@@ -1,8 +1,10 @@
-import Image from "next/image"
+// Styles / Assets
 import portalLogo from "../../assets/logo/portalsig.png"
 import classes from "./header.module.scss"
-import { ConnectButton } from "@rainbow-me/rainbowkit"
+// Components
 import Link from "next/link"
+import Image from "next/image"
+import { ConnectButton } from "@rainbow-me/rainbowkit"
 import NavigationMenu from "../navigation-menu/navigation-menu"
 
 export const Header = () => {

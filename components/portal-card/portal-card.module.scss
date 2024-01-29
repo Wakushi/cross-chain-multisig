@@ -1,10 +1,30 @@
 .portal_card {
+	position: relative;
+	width: 100%;
+	max-width: 1044px;
 	transition: 200ms ease-in-out;
+	overflow: hidden;
 
 	h3 {
 		font-size: 1rem;
 		font-weight: 600;
 		color: #fff;
+	}
+
+	.background {
+		position: absolute;
+		pointer-events: none;
+		top: -20%;
+		right: 5%;
+		width: 400px;
+		z-index: 1;
+		opacity: 0.1;
+
+		img {
+			width: 100%;
+			height: 100%;
+			animation: rotate 300s linear infinite;
+		}
 	}
 
 	.owner_list {
@@ -16,6 +36,11 @@
 	.title {
 		font-size: 1.5rem;
 		font-weight: 700;
+
+		.wallet_icon {
+			opacity: 0.3;
+			transition: 200ms ease-in-out;
+		}
 	}
 
 	&.small {
@@ -26,6 +51,19 @@
 		&:focus-visible {
 			transform: translateY(-5px);
 			box-shadow: 4px 4px 0px #fff;
+
+			.wallet_icon {
+				opacity: 1;
+			}
 		}
+	}
+}
+
+@keyframes rotate {
+	0% {
+		transform: rotate(0deg) scale(1);
+	}
+	100% {
+		transform: rotate(360deg) scale(10);
 	}
 }

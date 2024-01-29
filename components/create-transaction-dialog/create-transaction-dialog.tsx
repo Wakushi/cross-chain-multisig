@@ -48,15 +48,11 @@ import * as z from "zod"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { Chain, registeredChains } from "@/services/data/chains"
-import { TokenContext } from "@/services/TokenContext"
+import { PayFeesIn, TokenContext } from "@/services/TokenContext"
 import { Token } from "@/types/Token"
 import LoaderSmall from "../ui/loader-small/loader-small"
 import { PORTALSIG_WALLET_CONTRACT_ABI } from "@/constants/constants"
-
-enum PayFeesIn {
-	NATIVE = 0,
-	LINK = 1
-}
+import LoaderHive from "../ui/loader-hive/loader-hive"
 
 interface CreateTransactionDialogProps {
 	portalSigAddress: Address
@@ -81,10 +77,13 @@ export default function CreateTransactionDialog({
 	// Context & Utils
 	const { chain } = getNetwork()
 	const { toast } = useToast()
-	const { allSupportedTokens, getAllAddressTokens } = useContext(TokenContext)
+	const { allSupportedTokens, getAllAddressTokens, getTokenByAddress } =
+		useContext(TokenContext)
 
 	// State
 	const [isLoading, setIsLoading] = useState<boolean>(true)
+	const [open, setOpen] = useState<boolean>(false)
+	const [isSubmitting, setIsSubmitting] = useState<boolean>(false)
 	const [selectedChain, setSelectedChain] = useState<string>("")
 	const [selectedChainSupportedTokens, setSelectedChainSupportedTokens] =
 		useState<Token[]>([])
@@ -138,6 +137,7 @@ export default function CreateTransactionDialog({
 	}, [selectedToken])
 
 	function onSubmit(values: z.infer<typeof formSchema>) {
+		setIsSubmitting(true)
 		const {
 			destination,
 			destinationChainSelector,
@@ -185,11 +185,16 @@ export default function CreateTransactionDialog({
 			})
 			const { hash } = await writeContract(request)
 			const result = await waitForTransaction({ hash })
+			setIsSubmitting(false)
+			setOpen(false)
 			toast({
 				title: "Transaction created !",
 				description: result.contractAddress
 			})
 		} catch (error: any) {
+			setIsSubmitting(false)
+			setOpen(false)
+
 			toast({
 				title: "Something went wrong !",
 				description: error.message
@@ -207,23 +212,12 @@ export default function CreateTransactionDialog({
 		return []
 	}
 
-	function getTokenByAddress(tokenAddress: Address): Token | undefined {
-		return allSupportedTokens
-			.map((chain) => chain.supportedTokens)
-			.flat()
-			.find((token) => token.address === tokenAddress)
-	}
-
 	async function updateDisplayedTokenBalance(token: Token) {
-		let balance = 0
-		if (isTokenFromPortalChain(token.address)) {
-			balance = Number(token?.balance || 0)
-		} else {
-			balance = Number((await fetchTokenBalance(token))?.value || 0)
-			if (balance) {
-				balance = balance / Math.pow(10, token.decimals || 18)
-			}
+		let balance = Number((await fetchTokenBalance(token))?.value || 0)
+		if (balance) {
+			balance = balance / Math.pow(10, token.decimals || 18)
 		}
+
 		setSelectedTokenBalance(balance.toFixed(2))
 	}
 
@@ -267,275 +261,314 @@ export default function CreateTransactionDialog({
 	}
 
 	return (
-		<Dialog>
+		<Dialog open={open} onOpenChange={(isOpen: boolean) => setOpen(isOpen)}>
 			<DialogTrigger asChild>
 				<Button>Create transaction</Button>
 			</DialogTrigger>
-			<DialogContent className="sm:max-w-[525px] sm:max-h-[700px] overflow-auto custom-scrollbar">
-				<DialogHeader>
-					<DialogTitle>Create transaction</DialogTitle>
-					<DialogDescription>
-						Enter the details of the transaction you want to create.
-					</DialogDescription>
-				</DialogHeader>
-				<div className="grid gap-4 py-4">
-					<Form {...form}>
-						<form
-							onSubmit={form.handleSubmit(onSubmit)}
-							className="space-y-8"
-						>
-							{/* DESTINATION ADDRESS */}
-							<FormField
-								control={form.control}
-								name="destination"
-								render={({ field }) => (
-									<FormItem>
-										<FormLabel>Destination</FormLabel>
-										<FormControl>
-											<Input
-												placeholder="0x00"
-												{...field}
-											/>
-										</FormControl>
-										<FormDescription>
-											The address that will receive the
-											transaction.
-										</FormDescription>
-										<FormMessage />
-									</FormItem>
-								)}
-							/>
-							{/* DESTINATION BLOCKCHAIN */}
-							{isLoading ? (
-								<LoaderSmall />
-							) : (
-								<FormField
-									control={form.control}
-									name="destinationChainSelector"
-									render={({ field }) => (
-										<FormItem>
-											<FormLabel>
-												Destination chain
-											</FormLabel>
-											<Select
-												onValueChange={(value) => {
-													field.onChange(value)
-													setSelectedChain(value)
-												}}
-												defaultValue={field.value}
-											>
-												<FormControl>
-													<SelectTrigger>
-														<SelectValue placeholder="Select a destination chain" />
-													</SelectTrigger>
-												</FormControl>
-												<SelectContent>
-													{registeredChains.map(
-														({
-															name,
-															chainSelector
-														}) => (
-															<SelectItem
-																key={
-																	chainSelector
-																}
-																value={
-																	chainSelector
-																}
-															>
-																{name}
-															</SelectItem>
-														)
-													)}
-												</SelectContent>
-											</Select>
-											<FormDescription>
-												Blockchain where the transaction
-												will be sent to.
-											</FormDescription>
-											<FormMessage />
-										</FormItem>
-									)}
-								/>
-							)}
-							{/* TOKEN TO SEND */}
-							{!!form.getValues().destinationChainSelector &&
-								!isLoading && (
+			<DialogContent className="sm:max-w-[525px] h-[700px] overflow-auto custom-scrollbar">
+				{isSubmitting ? (
+					<div className="flex flex-col items-center justify-center">
+						<p className="mb-[22rem] text-center font-light text-2xl">
+							Please wait while we create your transaction
+							proposal...
+						</p>
+						<LoaderHive />
+					</div>
+				) : (
+					<>
+						<DialogHeader>
+							<DialogTitle>Create transaction</DialogTitle>
+							<DialogDescription>
+								Enter the details of the transaction you want to
+								create.
+							</DialogDescription>
+						</DialogHeader>
+						<div className="grid gap-4 py-4">
+							<Form {...form}>
+								<form
+									onSubmit={form.handleSubmit(onSubmit)}
+									className="flex flex-col space-y-8"
+								>
+									{/* DESTINATION ADDRESS */}
 									<FormField
 										control={form.control}
-										name="token"
+										name="destination"
 										render={({ field }) => (
 											<FormItem>
-												<FormLabel>Token</FormLabel>
-												<Select
-													onValueChange={(value) => {
-														field.onChange(value)
-														setSelectedToken(value)
-													}}
-													value={selectedToken}
-												>
-													<FormControl>
-														<SelectTrigger>
-															<SelectValue placeholder="Select a token to send" />
-														</SelectTrigger>
-													</FormControl>
-													<SelectContent>
-														{selectedChainSupportedTokens.map(
-															(
-																supportedToken
-															) => (
-																<SelectItem
-																	key={
-																		supportedToken.address
-																	}
-																	value={supportedToken.address.toString()}
-																>
-																	{
-																		supportedToken.name
-																	}
-																</SelectItem>
-															)
-														)}
-													</SelectContent>
-												</Select>
+												<FormLabel>
+													Destination
+												</FormLabel>
+												<FormControl>
+													<Input
+														placeholder="0x00"
+														{...field}
+													/>
+												</FormControl>
 												<FormDescription>
-													{selectedToken
-														? `Balance: ${selectedTokenBalance} ${
-																getTokenByAddress(
-																	selectedToken as Address
-																)?.symbol
-														  }`
-														: ""}
+													The address that will
+													receive the transaction.
 												</FormDescription>
 												<FormMessage />
 											</FormItem>
 										)}
 									/>
-								)}
-							{/* DESTINATION ADDRESS */}
-							<FormField
-								control={form.control}
-								name="amount"
-								render={({ field }) => (
-									<FormItem>
-										<FormLabel>Amount</FormLabel>
-										<FormControl>
-											<Input
-												type="number"
-												placeholder="0"
-												{...field}
-											/>
-										</FormControl>
-										<FormDescription>
-											Amount of tokens to send.
-										</FormDescription>
-										<FormMessage />
-									</FormItem>
-								)}
-							/>
-							{/* DESTINATION ADDRESS */}
-							<FormField
-								control={form.control}
-								name="data"
-								render={({ field }) => (
-									<FormItem>
-										<FormLabel>Data</FormLabel>
-										<FormControl>
-											<Input
-												placeholder="0x00"
-												{...field}
-											/>
-										</FormControl>
-										<FormDescription>
-											The data to send with the
-											transaction.
-										</FormDescription>
-										<FormMessage />
-									</FormItem>
-								)}
-							/>
-							{/* EXECUTES ON REQUIREMENT */}
-							<FormField
-								control={form.control}
-								name="executesOnRequirementMet"
-								render={({ field }) => (
-									<FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4 shadow">
-										<FormControl>
-											<Checkbox
-												checked={field.value}
-												onCheckedChange={field.onChange}
-											/>
-										</FormControl>
-										<div className="space-y-1 leading-none">
-											<FormLabel>
-												Execute transaction
-												automatically
-											</FormLabel>
-											<FormDescription>
-												Transaction will be executed
-												when enough signatures are
-												collected.
-											</FormDescription>
-										</div>
-									</FormItem>
-								)}
-							/>
-							{/* EXECUTES ON REQUIREMENT */}
-							{isExternalChain(selectedChain) && (
-								<FormField
-									control={form.control}
-									name="payFeesIn"
-									render={({ field }) => (
-										<FormItem className="space-y-3">
-											<FormLabel>
-												Pay cross-chain fees in
-											</FormLabel>
-											<FormControl>
-												<RadioGroup
-													onValueChange={
-														field.onChange
-													}
-													defaultValue={field.value.toString()}
-													className="flex flex-col space-y-1"
-												>
-													<FormItem className="flex items-center space-x-3 space-y-0">
+									{/* DESTINATION BLOCKCHAIN */}
+									{isLoading ? (
+										<LoaderSmall />
+									) : (
+										<FormField
+											control={form.control}
+											name="destinationChainSelector"
+											render={({ field }) => (
+												<FormItem>
+													<FormLabel>
+														Destination chain
+													</FormLabel>
+													<Select
+														onValueChange={(
+															value
+														) => {
+															field.onChange(
+																value
+															)
+															setSelectedChain(
+																value
+															)
+														}}
+														defaultValue={
+															field.value
+														}
+													>
 														<FormControl>
-															<RadioGroupItem
-																value={PayFeesIn.NATIVE.toString()}
-															/>
+															<SelectTrigger>
+																<SelectValue placeholder="Select a destination chain" />
+															</SelectTrigger>
 														</FormControl>
-														<FormLabel className="font-normal">
-															Native token
-														</FormLabel>
-													</FormItem>
-													<FormItem className="flex items-center space-x-3 space-y-0">
-														<FormControl>
-															<RadioGroupItem
-																value={PayFeesIn.LINK.toString()}
-															/>
-														</FormControl>
-														<FormLabel className="font-normal">
-															Link token
-														</FormLabel>
-													</FormItem>
-												</RadioGroup>
-											</FormControl>
-											<FormMessage />
-										</FormItem>
+														<SelectContent>
+															{registeredChains.map(
+																({
+																	name,
+																	chainSelector
+																}) => (
+																	<SelectItem
+																		key={
+																			chainSelector
+																		}
+																		value={
+																			chainSelector
+																		}
+																	>
+																		{name}
+																	</SelectItem>
+																)
+															)}
+														</SelectContent>
+													</Select>
+													<FormDescription>
+														Blockchain where the
+														transaction will be sent
+														to.
+													</FormDescription>
+													<FormMessage />
+												</FormItem>
+											)}
+										/>
 									)}
-								/>
-							)}
-							<Button
-								type="submit"
-								onClick={() => {
-									console.log(form.getValues())
-								}}
-							>
-								Submit
-							</Button>
-						</form>
-					</Form>
-				</div>
+									{/* TOKEN TO SEND */}
+									{!!form.getValues()
+										.destinationChainSelector &&
+										!isLoading && (
+											<FormField
+												control={form.control}
+												name="token"
+												render={({ field }) => (
+													<FormItem>
+														<FormLabel>
+															Token
+														</FormLabel>
+														<Select
+															onValueChange={(
+																value
+															) => {
+																field.onChange(
+																	value
+																)
+																setSelectedToken(
+																	value
+																)
+															}}
+															value={
+																selectedToken
+															}
+														>
+															<FormControl>
+																<SelectTrigger>
+																	<SelectValue placeholder="Select a token to send" />
+																</SelectTrigger>
+															</FormControl>
+															<SelectContent>
+																{selectedChainSupportedTokens.map(
+																	(
+																		supportedToken
+																	) => (
+																		<SelectItem
+																			key={
+																				supportedToken.address
+																			}
+																			value={supportedToken.address.toString()}
+																		>
+																			{
+																				supportedToken.name
+																			}
+																		</SelectItem>
+																	)
+																)}
+															</SelectContent>
+														</Select>
+														<FormDescription>
+															{selectedToken
+																? `Balance: ${selectedTokenBalance} ${
+																		getTokenByAddress(
+																			selectedToken as Address
+																		)
+																			?.symbol
+																  }`
+																: ""}
+														</FormDescription>
+														<FormMessage />
+													</FormItem>
+												)}
+											/>
+										)}
+									{/* DESTINATION ADDRESS */}
+									<FormField
+										control={form.control}
+										name="amount"
+										render={({ field }) => (
+											<FormItem>
+												<FormLabel>Amount</FormLabel>
+												<FormControl>
+													<Input
+														type="number"
+														placeholder="0"
+														{...field}
+													/>
+												</FormControl>
+												<FormDescription>
+													Amount of tokens to send.
+												</FormDescription>
+												<FormMessage />
+											</FormItem>
+										)}
+									/>
+									{/* DESTINATION ADDRESS */}
+									<FormField
+										control={form.control}
+										name="data"
+										render={({ field }) => (
+											<FormItem>
+												<FormLabel>Data</FormLabel>
+												<FormControl>
+													<Input
+														placeholder="0x00"
+														{...field}
+													/>
+												</FormControl>
+												<FormDescription>
+													The data to send with the
+													transaction.
+												</FormDescription>
+												<FormMessage />
+											</FormItem>
+										)}
+									/>
+									{/* EXECUTES ON REQUIREMENT */}
+									<FormField
+										control={form.control}
+										name="executesOnRequirementMet"
+										render={({ field }) => (
+											<FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4 shadow">
+												<FormControl>
+													<Checkbox
+														checked={field.value}
+														onCheckedChange={
+															field.onChange
+														}
+													/>
+												</FormControl>
+												<div className="space-y-1 leading-none">
+													<FormLabel>
+														Execute transaction
+														automatically
+													</FormLabel>
+													<FormDescription>
+														Transaction will be
+														executed when enough
+														signatures are
+														collected.
+													</FormDescription>
+												</div>
+											</FormItem>
+										)}
+									/>
+									{/* EXECUTES ON REQUIREMENT */}
+									{isExternalChain(selectedChain) && (
+										<FormField
+											control={form.control}
+											name="payFeesIn"
+											render={({ field }) => (
+												<FormItem className="space-y-3">
+													<FormLabel>
+														Pay cross-chain fees in
+													</FormLabel>
+													<FormControl>
+														<RadioGroup
+															onValueChange={
+																field.onChange
+															}
+															defaultValue={field.value.toString()}
+															className="flex flex-col space-y-1"
+														>
+															<FormItem className="flex items-center space-x-3 space-y-0">
+																<FormControl>
+																	<RadioGroupItem
+																		value={PayFeesIn.NATIVE.toString()}
+																	/>
+																</FormControl>
+																<FormLabel className="font-normal">
+																	Native token
+																</FormLabel>
+															</FormItem>
+															<FormItem className="flex items-center space-x-3 space-y-0">
+																<FormControl>
+																	<RadioGroupItem
+																		value={PayFeesIn.LINK.toString()}
+																	/>
+																</FormControl>
+																<FormLabel className="font-normal">
+																	Link token
+																</FormLabel>
+															</FormItem>
+														</RadioGroup>
+													</FormControl>
+													<FormMessage />
+												</FormItem>
+											)}
+										/>
+									)}
+									<Button
+										type="submit"
+										onClick={() => {
+											console.log(form.getValues())
+										}}
+									>
+										Submit
+									</Button>
+								</form>
+							</Form>
+						</div>
+					</>
+				)}
 			</DialogContent>
 		</Dialog>
 	)

@@ -11,7 +11,6 @@ import Link from "next/link"
 import TooltipWrapper from "@/components/ui/custom-tooltip"
 import LoaderHive from "@/components/ui/loader-hive/loader-hive"
 import PortalCard from "@/components/portal-card/portal-card"
-
 // Services
 import { PortalContext } from "@/services/PortalContext"
 // Utils
@@ -19,6 +18,7 @@ import { Address } from "viem"
 // Types
 import { Portal } from "@/types/Portal"
 import { PortalCardView } from "@/types/PortalCardProps"
+import TransactionList from "@/components/transaction-list/transaction-list"
 
 export default function PortalPage({
 	params
@@ -55,9 +55,10 @@ export default function PortalPage({
 				<LoaderHive />
 			) : (
 				<div
-					className={`${classes.portal_page_content} flex flex-wrap items-center justify-center fade-in`}
+					className={`${classes.portal_page_content} flex flex-col items-center justify-center fade-in`}
 				>
 					<PortalCard portal={portal} view={PortalCardView.DETAIL} />
+					<TransactionList portal={portal} />
 				</div>
 			)}
 		</div>

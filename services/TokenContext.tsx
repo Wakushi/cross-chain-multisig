@@ -10,6 +10,11 @@ interface ChainSupportedTokens {
 	supportedTokens: Token[]
 }
 
+export enum PayFeesIn {
+	NATIVE = 0,
+	LINK = 1
+}
+
 interface TokenContextProviderProps {
 	children: ReactNode
 }
@@ -20,12 +25,16 @@ interface TokenContextProps {
 		address: Address,
 		network?: Network
 	) => Promise<Token[]>
+	getTokenByAddress: (tokenAddress: Address) => Token | null
 }
 
 const TokenContext = createContext<TokenContextProps>({
 	allSupportedTokens: [],
 	getAllAddressTokens: async () => {
 		return []
+	},
+	getTokenByAddress: () => {
+		return null
 	}
 })
 export default function TokenContextProvider(props: TokenContextProviderProps) {
@@ -85,9 +94,22 @@ export default function TokenContextProvider(props: TokenContextProviderProps) {
 		return addressTokens
 	}
 
+	function getTokenByAddress(tokenAddress: Address): Token | null {
+		const supportedTokens = registeredChains
+			.map((chain) => chain.supportedTokens)
+			.flat()
+		const token = supportedTokens.find(
+			(token) =>
+				token.address.toLowerCase() === tokenAddress.toLowerCase()
+		)
+
+		return token || null
+	}
+
 	const context = {
 		allSupportedTokens,
-		getAllAddressTokens
+		getAllAddressTokens,
+		getTokenByAddress
 	}
 
 	return (

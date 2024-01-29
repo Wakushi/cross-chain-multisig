@@ -1,10 +1,10 @@
 "use client"
 import { useAccount } from "wagmi"
 import { useContext, useEffect, useState } from "react"
-import LoaderHive from "@/components/ui/loader-hive/loader-hive"
-import PortalList from "@/components/portal-list/portal-list"
 import { PortalContext } from "@/services/PortalContext"
 import { Portal } from "@/types/Portal"
+import LoaderHive from "@/components/ui/loader-hive/loader-hive"
+import PortalList from "@/components/portal-list/portal-list"
 
 export default function PortalsPage() {
 	const { isConnected } = useAccount()

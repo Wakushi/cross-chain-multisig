@@ -1,3 +1,4 @@
+"use client"
 import { Portal } from "@/types/Portal"
 import { useEffect, useState } from "react"
 import { Address } from "viem"
@@ -30,9 +31,17 @@ export default function TransactionList({ portal }: TransactionListProps) {
 	}
 
 	return (
-		<div className="flex items-baseline justify-center flex-wrap gap-5 mt-5">
+		<div className="flex justify-center flex-wrap gap-5 mt-5">
 			{transactions.map((transaction, index) => {
-				return <TransactionCard key={index} transaction={transaction} />
+				return (
+					<TransactionCard
+						key={index}
+						transactionId={index}
+						transaction={transaction}
+						portalSig={portal}
+						getTransactions={getTransactions}
+					/>
+				)
 			})}
 		</div>
 	)

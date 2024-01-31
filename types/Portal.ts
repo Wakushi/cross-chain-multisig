@@ -5,5 +5,6 @@ export interface Portal {
 	owners: Address[]
 	balance: string
 	numberOfTransactions: string
+	requiredConfirmationsAmount: string
 	lastTransaction: number
 }

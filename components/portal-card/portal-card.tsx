@@ -26,8 +26,7 @@ import { faWallet } from "@fortawesome/free-solid-svg-icons"
 import vectorImg from "@/assets/images/vector.png"
 
 export default function PortalCard({ portal, view }: PortalCardProps) {
-	const { address, owners, balance, numberOfTransactions, lastTransaction } =
-		portal
+	const { address, owners, balance, numberOfTransactions } = portal
 	const router = useRouter()
 
 	function navigateToPortal(portalAddress: Address): void {

@@ -13,3 +13,10 @@ export interface Transaction {
 	executesOnRequirementMet: boolean
 	payFeesIn: PayFeesIn
 }
+
+export enum TransactionStatus {
+	WAITING_FOR_APPROVAL = "Pending",
+	CONFIRMED = "Confirmed",
+	APPROVED = "Approved",
+	EXECUTED = "Executed"
+}

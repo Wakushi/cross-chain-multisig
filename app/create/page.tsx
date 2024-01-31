@@ -1,7 +1,7 @@
 "use client"
 import classes from "./create.module.scss"
 // React
-import { useContext, useState } from "react"
+import { useContext, useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 
 // Context
@@ -37,6 +37,7 @@ import {
 	writeContract,
 	waitForTransaction
 } from "@wagmi/core"
+import { useAccount } from "wagmi"
 
 export default function CreatePage() {
 	const [ownersAddresses, setOwnersAddresses] = useState<string[]>(["", ""])
@@ -44,8 +45,15 @@ export default function CreatePage() {
 	const { handleCreationFormError, errorMsg } = useContext(ErrorContext)
 	const [isLoading, setIsLoading] = useState<boolean>(false)
 
+	const { address } = useAccount()
 	const router = useRouter()
 	const { toast } = useToast()
+
+	useEffect(() => {
+		if (address) {
+			setOwnersAddresses([address, ""])
+		}
+	}, [address])
 
 	function handleAddOwnerInputField(): void {
 		setOwnersAddresses((prevOwnersAddresses) => [

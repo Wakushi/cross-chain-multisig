@@ -14,6 +14,7 @@ import {
 import { configureChains, createConfig, WagmiConfig } from "wagmi"
 import { sepolia } from "wagmi/chains"
 import { publicProvider } from "wagmi/providers/public"
+import { alchemyProvider } from "@wagmi/core/providers/alchemy"
 
 // React
 import { ReactNode } from "react"
@@ -33,7 +34,10 @@ import { Layout } from "@/components/layout/layout"
 import PortalContextProvider from "@/services/PortalContext"
 import TokenContextProvider from "@/services/TokenContext"
 
-const { chains, publicClient } = configureChains([sepolia], [publicProvider()])
+const { chains, publicClient } = configureChains(
+	[sepolia],
+	[alchemyProvider({ apiKey: process.env.NEXT_PUBLIC_ALCHEMY_API_KEY ?? "" })]
+)
 
 const { connectors } = getDefaultWallets({
 	appName: "PortalSig",

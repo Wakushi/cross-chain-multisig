@@ -41,11 +41,14 @@ export default function PortalContextProvider(
 		const owners = await getPortalOwners(portalAddress)
 		const balance = await getPortalBalance(portalAddress)
 		const transactionsCount = await getTransactionsCount(portalAddress)
+		const requiredConfirmationsAmount =
+			await getRequiredConfirmationsAmount(portalAddress)
 		return {
 			address: portalAddress,
 			owners: owners,
 			balance: balance,
 			numberOfTransactions: transactionsCount,
+			requiredConfirmationsAmount: requiredConfirmationsAmount,
 			lastTransaction: 0
 		}
 	}
@@ -85,6 +88,17 @@ export default function PortalContextProvider(
 			functionName: "getTransactionCount"
 		})
 		return transactionCount.toString()
+	}
+
+	async function getRequiredConfirmationsAmount(
+		portalAddress: Address
+	): Promise<string> {
+		const requiredConfirmationsAmount: any = await readContract({
+			address: portalAddress,
+			abi: PORTALSIG_WALLET_CONTRACT_ABI,
+			functionName: "getRequiredConfirmationsAmount"
+		})
+		return requiredConfirmationsAmount.toString()
 	}
 
 	function savePortals(portals: Portal[]): void {

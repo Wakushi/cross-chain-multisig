@@ -147,6 +147,7 @@ export default function CreateTransactionDialog({
 			executesOnRequirementMet,
 			payFeesIn
 		} = values
+
 		createTransaction(
 			destination,
 			destinationChainSelector,
@@ -168,6 +169,9 @@ export default function CreateTransactionDialog({
 		payFeesIn: string
 	): Promise<void> {
 		try {
+			destinationChainSelector = isExternalChain(destinationChainSelector)
+				? destinationChainSelector
+				: "0"
 			const { request } = await prepareWriteContract({
 				address: portalSigAddress,
 				abi: PORTALSIG_WALLET_CONTRACT_ABI,
@@ -219,19 +223,6 @@ export default function CreateTransactionDialog({
 		}
 
 		setSelectedTokenBalance(balance.toFixed(2))
-	}
-
-	function isTokenFromPortalChain(tokenAddress: Address): boolean {
-		const portalChain = getPortalChain()
-		if (portalChain) {
-			const portalChainSupportedTokens = getChainSupportedTokens(
-				portalChain.chainSelector
-			)
-			return !!portalChainSupportedTokens.find(
-				(token) => token.address === tokenAddress
-			)
-		}
-		return false
 	}
 
 	function getPortalChain(): Chain | undefined {

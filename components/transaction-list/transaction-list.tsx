@@ -1,48 +1,45 @@
 "use client"
 import { Portal } from "@/types/Portal"
-import { useEffect, useState } from "react"
-import { Address } from "viem"
-import { readContract } from "@wagmi/core"
-import { PORTALSIG_WALLET_CONTRACT_ABI } from "@/constants/constants"
 import { Transaction } from "@/types/Transaction"
+import { TransactionContext } from "@/services/TransactionsContext"
 import TransactionCard from "../transaction-card/transaction-card"
+import { useContext, useEffect, useState } from "react"
 
 interface TransactionListProps {
-	portal: Portal
+  portal: Portal
 }
 
 export default function TransactionList({ portal }: TransactionListProps) {
-	const [transactions, setTransactions] = useState<Transaction[]>([])
+  const {
+    fetchPortalTransactions,
+    allPortalsTransactions,
+    getPortalTransactions,
+  } = useContext(TransactionContext)
+  const [transactions, setTransactions] = useState<Transaction[]>([])
 
-	useEffect(() => {
-		if (portal) {
-			getTransactions(portal.address)
-		}
-	}, [])
+  useEffect(() => {
+    if (portal) {
+      fetchPortalTransactions(portal.address)
+    }
+  }, [])
 
-	async function getTransactions(portalAddress: Address): Promise<void> {
-		if (!portalAddress) return
-		const transactions: any = await readContract({
-			address: portalAddress,
-			abi: PORTALSIG_WALLET_CONTRACT_ABI,
-			functionName: "getTransactions"
-		})
-		setTransactions(transactions)
-	}
+  useEffect(() => {
+    setTransactions(getPortalTransactions(portal.address))
+  }, [allPortalsTransactions])
 
-	return (
-		<div className="flex justify-center flex-wrap gap-5 mt-5">
-			{transactions.map((transaction, index) => {
-				return (
-					<TransactionCard
-						key={index}
-						transactionId={index}
-						transaction={transaction}
-						portalSig={portal}
-						getTransactions={getTransactions}
-					/>
-				)
-			})}
-		</div>
-	)
+  return (
+    <div className="flex justify-center flex-wrap gap-5 mt-5">
+      {transactions.map((transaction, index) => {
+        return (
+          <TransactionCard
+            key={index}
+            transactionId={index}
+            transaction={transaction}
+            portalSig={portal}
+            fetchPortalTransactions={fetchPortalTransactions}
+          />
+        )
+      })}
+    </div>
+  )
 }

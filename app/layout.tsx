@@ -5,15 +5,14 @@ import "./globals.scss"
 
 // RainbowKit
 import {
-	getDefaultWallets,
-	RainbowKitProvider,
-	darkTheme
+  getDefaultWallets,
+  RainbowKitProvider,
+  darkTheme,
 } from "@rainbow-me/rainbowkit"
 
 // Wagmi
 import { configureChains, createConfig, WagmiConfig } from "wagmi"
 import { sepolia } from "wagmi/chains"
-import { publicProvider } from "wagmi/providers/public"
 import { alchemyProvider } from "@wagmi/core/providers/alchemy"
 
 // React
@@ -33,63 +32,66 @@ import { Toaster } from "@/components/ui/toaster"
 import { Layout } from "@/components/layout/layout"
 import PortalContextProvider from "@/services/PortalContext"
 import TokenContextProvider from "@/services/TokenContext"
+import TransactionContextProvider from "@/services/TransactionsContext"
 
 const { chains, publicClient } = configureChains(
-	[sepolia],
-	[alchemyProvider({ apiKey: process.env.NEXT_PUBLIC_ALCHEMY_API_KEY ?? "" })]
+  [sepolia],
+  [alchemyProvider({ apiKey: process.env.NEXT_PUBLIC_ALCHEMY_API_KEY ?? "" })]
 )
 
 const { connectors } = getDefaultWallets({
-	appName: "PortalSig",
-	projectId: process.env.NEXT_PUBLIC_WALLET_CONNECT_ID ?? "",
-	chains
+  appName: "PortalSig",
+  projectId: process.env.NEXT_PUBLIC_WALLET_CONNECT_ID ?? "",
+  chains,
 })
 
 const wagmiConfig = createConfig({
-	autoConnect: true,
-	connectors,
-	publicClient
+  autoConnect: true,
+  connectors,
+  publicClient,
 })
 
 export default function RootLayout({ children }: { children: ReactNode }) {
-	return (
-		<html lang="en" className="custom-scrollbar">
-			<Head>
-				<link rel="preconnect" href="https://fonts.googleapis.com" />
-				<link
-					rel="preconnect"
-					href="https://fonts.gstatic.com"
-					crossOrigin="anonymous"
-				/>
-				<link
-					href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Tilt+Neon&display=swap"
-					rel="stylesheet"
-				/>
-			</Head>
-			<body className="relative">
-				<WagmiConfig config={wagmiConfig}>
-					<RainbowKitProvider
-						chains={chains}
-						theme={darkTheme({
-							accentColor: "#fff",
-							accentColorForeground: "#000",
-							borderRadius: "small",
-							overlayBlur: "small"
-						})}
-					>
-						<ErrorContextProvider>
-							<PortalContextProvider>
-								<TokenContextProvider>
-									<Layout>{children}</Layout>
-								</TokenContextProvider>
-							</PortalContextProvider>
-						</ErrorContextProvider>
-					</RainbowKitProvider>
-				</WagmiConfig>
-				<ShaderGradientBackground />
-				<LoadingScreen />
-				<Toaster />
-			</body>
-		</html>
-	)
+  return (
+    <html lang="en" className="custom-scrollbar">
+      <Head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link
+          rel="preconnect"
+          href="https://fonts.gstatic.com"
+          crossOrigin="anonymous"
+        />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Tilt+Neon&display=swap"
+          rel="stylesheet"
+        />
+      </Head>
+      <body className="relative">
+        <WagmiConfig config={wagmiConfig}>
+          <RainbowKitProvider
+            chains={chains}
+            theme={darkTheme({
+              accentColor: "#fff",
+              accentColorForeground: "#000",
+              borderRadius: "small",
+              overlayBlur: "small",
+            })}
+          >
+            <ErrorContextProvider>
+              <PortalContextProvider>
+                <TokenContextProvider>
+                  <TransactionContextProvider>
+                    <Layout>{children}</Layout>
+                  </TransactionContextProvider>
+                </TokenContextProvider>
+              </PortalContextProvider>
+            </ErrorContextProvider>
+          </RainbowKitProvider>
+        </WagmiConfig>
+        <ShaderGradientBackground />
+        <LoadingScreen />
+        <Toaster />
+      </body>
+    </html>
+  )
 }

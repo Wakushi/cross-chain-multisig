@@ -26,13 +26,13 @@ config.autoAddCss = false
 
 // Shader gradient
 import ShaderGradientBackground from "../components/ui/shader-gradient"
-import ErrorContextProvider from "@/services/ErrorContext"
 import LoadingScreen from "@/components/ui/loading-screen/loading-screen"
 import { Toaster } from "@/components/ui/toaster"
 import { Layout } from "@/components/layout/layout"
 import PortalContextProvider from "@/services/PortalContext"
 import TokenContextProvider from "@/services/TokenContext"
 import TransactionContextProvider from "@/services/TransactionsContext"
+import ChainContextProvider, { ChainContext } from "@/services/ChainContext"
 
 const { chains, publicClient } = configureChains(
   [sepolia],
@@ -77,7 +77,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
               overlayBlur: "small",
             })}
           >
-            <ErrorContextProvider>
+            <ChainContextProvider>
               <PortalContextProvider>
                 <TokenContextProvider>
                   <TransactionContextProvider>
@@ -85,7 +85,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
                   </TransactionContextProvider>
                 </TokenContextProvider>
               </PortalContextProvider>
-            </ErrorContextProvider>
+            </ChainContextProvider>
           </RainbowKitProvider>
         </WagmiConfig>
         <ShaderGradientBackground />

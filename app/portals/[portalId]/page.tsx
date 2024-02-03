@@ -18,49 +18,48 @@ import { Address } from "viem"
 // Types
 import { Portal } from "@/types/Portal"
 import { PortalCardView } from "@/types/PortalCardProps"
-import TransactionList from "@/components/transaction-list/transaction-list"
+import TransactionList from "@/components/transaction-list"
 
 export default function PortalPage({
-	params
+  params,
 }: {
-	params: { portalId: Address }
+  params: { portalId: Address }
 }) {
-	const [portal, setPortal] = useState<Portal>({} as Portal)
-	const [isLoading, setIsLoading] = useState<boolean>(false)
-	const { getPortalSig } = useContext(PortalContext)
+  const [portal, setPortal] = useState<Portal>({} as Portal)
+  const [isLoading, setIsLoading] = useState<boolean>(false)
+  const { getPortal } = useContext(PortalContext)
 
-	useEffect(() => {
-		async function getPortal() {
-			setIsLoading(true)
-			const portal = await getPortalSig(params.portalId)
-			setPortal(portal)
-			setIsLoading(false)
-		}
-		getPortal()
-	}, [])
+  useEffect(() => {
+    async function fetchPortal() {
+      setIsLoading(true)
+      const portal = await getPortal(params.portalId)
+      setPortal(portal)
+      setIsLoading(false)
+    }
+    fetchPortal()
+  }, [])
 
-	return (
-		<div className={`${classes.portal_page} min-h-screen`}>
-			<TooltipWrapper message="Back to portals">
-				<Link href="/portals">
-					<FontAwesomeIcon
-						icon={faBackward}
-						className={`${classes.fas} fas`}
-						style={{ color: "#fff" }}
-					></FontAwesomeIcon>
-				</Link>
-			</TooltipWrapper>
-
-			{isLoading ? (
-				<LoaderHive />
-			) : (
-				<div
-					className={`${classes.portal_page_content} flex flex-col items-center justify-center fade-in`}
-				>
-					<PortalCard portal={portal} view={PortalCardView.DETAIL} />
-					<TransactionList portal={portal} />
-				</div>
-			)}
-		</div>
-	)
+  return (
+    <div className={`${classes.portal_page} min-h-screen`}>
+      <TooltipWrapper message="Back to portals">
+        <Link href="/portals">
+          <FontAwesomeIcon
+            icon={faBackward}
+            className={`${classes.fas} fas`}
+            style={{ color: "#fff" }}
+          ></FontAwesomeIcon>
+        </Link>
+      </TooltipWrapper>
+      {isLoading ? (
+        <LoaderHive />
+      ) : (
+        <div
+          className={`${classes.portal_page_content} flex flex-col items-center justify-center fade-in`}
+        >
+          <PortalCard portal={portal} view={PortalCardView.DETAIL} />
+          <TransactionList portal={portal} />
+        </div>
+      )}
+    </div>
+  )
 }

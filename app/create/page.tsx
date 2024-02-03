@@ -1,234 +1,198 @@
 "use client"
-import classes from "./create.module.scss"
 // React
 import { useContext, useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 
-// Context
-import { ErrorContext } from "@/services/ErrorContext" // <- TO REWORK (useless context)
-
 // Components
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
-import { faPlus, faCircleMinus } from "@fortawesome/free-solid-svg-icons"
 import {
-	Card,
-	CardContent,
-	CardDescription,
-	CardFooter,
-	CardHeader,
-	CardTitle
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
 } from "@/components/ui/card"
 import { useToast } from "@/components/ui/use-toast"
 import LoaderHive from "@/components/ui/loader-hive/loader-hive"
 
 // Constants
 import {
-	PORTALSIG_FACTORY_CONTRACT_ADDRESS,
-	PORTALSIG_FACTORY_CONTRACT_ABI,
-	SEPOLIA_CCIP_ROUTER_CONTRACT_ADDRESS,
-	SEPOLIA_LINK_CONTRACT_ADDRESS
+  PORTALSIG_FACTORY_CONTRACT_ADDRESS,
+  PORTALSIG_FACTORY_CONTRACT_ABI,
+  SEPOLIA_CCIP_ROUTER_CONTRACT_ADDRESS,
+  SEPOLIA_LINK_CONTRACT_ADDRESS,
 } from "@/constants/constants"
 
 // Wagmi
-import {
-	prepareWriteContract,
-	writeContract,
-	waitForTransaction
-} from "@wagmi/core"
+import { ChainContext, ContractCallType } from "@/services/ChainContext"
+import CustomToastAction from "@/components/ui/custom-toast-action"
+import CreatePortalForm from "@/components/create-portal-form"
+import { Address } from "viem"
 import { useAccount } from "wagmi"
+import { isValidEthereumAddress } from "@/lib/utils"
 
 export default function CreatePage() {
-	const [ownersAddresses, setOwnersAddresses] = useState<string[]>(["", ""])
-	const [numberOfConfirmation, setNumberOfConfirmation] = useState<number>(2)
-	const { handleCreationFormError, errorMsg } = useContext(ErrorContext)
-	const [isLoading, setIsLoading] = useState<boolean>(false)
+  const { toast } = useToast()
+  const { address } = useAccount()
+  const router = useRouter()
 
-	const { address } = useAccount()
-	const router = useRouter()
-	const { toast } = useToast()
+  const { callContract } = useContext(ChainContext)
 
-	useEffect(() => {
-		if (address) {
-			setOwnersAddresses([address, ""])
-		}
-	}, [address])
+  const [ownersAddresses, setOwnersAddresses] = useState<Address[]>([
+    "0x",
+    "0x",
+  ])
+  const [numberOfConfirmation, setNumberOfConfirmation] = useState<string>("2")
+  const [isLoading, setIsLoading] = useState<boolean>(false)
+  const [errorMsg, setErrorMsg] = useState<string>("")
 
-	function handleAddOwnerInputField(): void {
-		setOwnersAddresses((prevOwnersAddresses) => [
-			...prevOwnersAddresses,
-			""
-		])
-	}
+  useEffect(() => {
+    if (address) {
+      setOwnersAddresses([address, "0x"])
+    }
+  }, [address])
 
-	function handleRemoveOwnerInputField(index: number): void {
-		setOwnersAddresses((prevOwnersAddresses) => {
-			const newOwnersInput = [...prevOwnersAddresses]
-			newOwnersInput.splice(index, 1)
-			return newOwnersInput
-		})
-	}
+  function handleAddOwnerInputField(): void {
+    setOwnersAddresses((prevOwnersAddresses: Address[]) => [
+      ...prevOwnersAddresses,
+      "0x",
+    ])
+  }
 
-	function handleOnOwnerInputChange(index: number, newAddress: string): void {
-		setOwnersAddresses((prevOwnersAddresses) => {
-			const newOwnersAddresses = [...prevOwnersAddresses]
-			newOwnersAddresses[index] = newAddress
-			return newOwnersAddresses
-		})
-	}
+  function handleRemoveOwnerInputField(index: number): void {
+    setOwnersAddresses((prevOwnersAddresses: Address[]) => {
+      const newOwnersInput = [...prevOwnersAddresses]
+      newOwnersInput.splice(index, 1)
+      return newOwnersInput
+    })
+  }
 
-	function handleOnConfirmationInputChange(
-		numberOfConfirmation: number
-	): void {
-		setNumberOfConfirmation(numberOfConfirmation)
-	}
+  function handleOnOwnerInputChange(index: number, newAddress: Address): void {
+    setOwnersAddresses((prevOwnersAddresses: Address[]) => {
+      const newOwnersAddresses = [...prevOwnersAddresses]
+      newOwnersAddresses[index] = newAddress
+      return newOwnersAddresses
+    })
+  }
 
-	function handleSubmit(): void {
-		if (!handleCreationFormError(ownersAddresses, numberOfConfirmation)) {
-			return
-		} else {
-			createPortalSig()
-		}
-	}
+  function handleOnConfirmationInputChange(numberOfConfirmation: string): void {
+    setNumberOfConfirmation(numberOfConfirmation)
+  }
 
-	async function createPortalSig(): Promise<void> {
-		setIsLoading(true)
-		try {
-			const { request } = await prepareWriteContract({
-				address: PORTALSIG_FACTORY_CONTRACT_ADDRESS,
-				abi: PORTALSIG_FACTORY_CONTRACT_ABI,
-				functionName: "deployPortalSigWallet",
-				args: [
-					ownersAddresses,
-					parseInt(numberOfConfirmation.toString()),
-					SEPOLIA_CCIP_ROUTER_CONTRACT_ADDRESS,
-					SEPOLIA_LINK_CONTRACT_ADDRESS
-				]
-			})
-			const { hash } = await writeContract(request)
-			const data = await waitForTransaction({ hash })
-			setIsLoading(false)
-			toast({
-				title: "Wallet created !",
-				description: data.contractAddress
-			})
-			navigateToPortals()
-		} catch (error: any) {
-			setIsLoading(false)
-			toast({
-				title: "Something went wrong !",
-				description: error.message
-			})
-		}
-	}
+  function handleCreationFormError(
+    ownerAddresses: Address[],
+    numberOfConfirmation: number
+  ): boolean {
+    if (ownerAddresses.length < 2) {
+      setErrorMsg("You must have at least 2 owners.")
+      return false
+    } else if (numberOfConfirmation < 2) {
+      setErrorMsg("You must have at least 2 confirmations.")
+      return false
+    } else if (!areAddressesValid(ownerAddresses)) {
+      setErrorMsg("Please verify the addresses format.")
+      return false
+    } else if (numberOfConfirmation > ownerAddresses.length) {
+      setErrorMsg("There are more confirmations than owners.")
+      return false
+    } else if (new Set(ownerAddresses).size !== ownerAddresses.length) {
+      setErrorMsg("There are duplicate addresses.")
+      return false
+    }
+    setErrorMsg("")
+    return true
+  }
 
-	function navigateToPortals(): void {
-		router.push("/portals")
-	}
+  function areAddressesValid(ownerAddresses: Address[]): boolean {
+    return ownerAddresses.every((address) => {
+      return address.length === 42 && isValidEthereumAddress(address)
+    })
+  }
 
-	return (
-		<div
-			className={`${classes.create_page} flex items-center justify-center fade-in`}
-		>
-			{isLoading ? (
-				<div className={`${classes.loader_container} fade-in`}>
-					<h2>opening portal...</h2>
-					<LoaderHive />
-				</div>
-			) : (
-				<>
-					<Card className={classes.create_card}>
-						<CardHeader>
-							<CardTitle>Create a new PortalSig</CardTitle>
-							<CardDescription>
-								Please configurate your new cross-chain multisig
-								wallet.
-							</CardDescription>
-						</CardHeader>
-						<CardContent>
-							<p>
-								Please enter the number of confirmations
-								required for every future transaction of this
-								wallet.
-							</p>
-							<div className="flex items-center gap-4">
-								<span>Every transaction will require </span>
-								<div className={classes.confirmation_input}>
-									<Input
-										type="number"
-										placeholder="2"
-										min="2"
-										onChange={(e) =>
-											handleOnConfirmationInputChange(
-												+e.target.value
-											)
-										}
-									/>
-								</div>
-								<div>owner confirmations.</div>
-							</div>
-							<p className={classes.small_text}>
-								Note : there should be at least two owners
-								minimum, and two confirmation required minimum.
-							</p>
-							<p>Please enter the owners address.</p>
-							<div
-								className={`${classes.owners_input_list} flex flex-wrap items-center gap-4`}
-							>
-								{ownersAddresses.map((address, index) => {
-									return (
-										<div
-											key={index}
-											className={`${classes.owner_input} dark_input`}
-										>
-											{index > 1 && (
-												<FontAwesomeIcon
-													icon={faCircleMinus}
-													className={`${classes.fas} fas`}
-													style={{ color: "red" }}
-													onClick={() =>
-														handleRemoveOwnerInputField(
-															index
-														)
-													}
-												></FontAwesomeIcon>
-											)}
-											<Input
-												value={address}
-												type="text"
-												placeholder="0x00..."
-												onChange={(e) =>
-													handleOnOwnerInputChange(
-														index,
-														e.target.value
-													)
-												}
-											/>
-										</div>
-									)
-								})}
-								<FontAwesomeIcon
-									icon={faPlus}
-									className="fas fa-plus"
-									style={{ color: "#fff" }}
-									onClick={handleAddOwnerInputField}
-								></FontAwesomeIcon>
-							</div>
-							<div className="flex items-center justify-between">
-								{errorMsg && (
-									<span className="text-rose-600">
-										{errorMsg}
-									</span>
-								)}
-							</div>
-						</CardContent>
-						<CardFooter>
-							<Button onClick={handleSubmit}>Submit</Button>
-						</CardFooter>
-					</Card>
-				</>
-			)}
-		</div>
-	)
+  function handleSubmit(): void {
+    if (
+      handleCreationFormError(ownersAddresses, parseInt(numberOfConfirmation))
+    ) {
+      createPortalSig()
+    }
+  }
+
+  async function createPortalSig(): Promise<void> {
+    setIsLoading(true)
+    try {
+      const result = await callContract({
+        contractAddress: PORTALSIG_FACTORY_CONTRACT_ADDRESS,
+        abi: PORTALSIG_FACTORY_CONTRACT_ABI,
+        method: "deployPortalSigWallet",
+        args: [
+          ownersAddresses,
+          parseInt(numberOfConfirmation.toString()),
+          SEPOLIA_CCIP_ROUTER_CONTRACT_ADDRESS,
+          SEPOLIA_LINK_CONTRACT_ADDRESS,
+        ],
+        type: ContractCallType.WRITE,
+      })
+      setIsLoading(false)
+      toast({
+        title: "Wallet created !",
+        description: "See on block explorer",
+        action: (
+          <CustomToastAction transactionHash={result.transactionHash ?? ""} />
+        ),
+      })
+      navigateToPortals()
+    } catch (error: any) {
+      setIsLoading(false)
+      toast({
+        title: "Something went wrong !",
+        description: error.message,
+      })
+    }
+  }
+
+  function navigateToPortals(): void {
+    router.push("/portals")
+  }
+
+  return (
+    <div className="h-screen flex items-center justify-center fade-in">
+      {isLoading ? (
+        <div className="fade-in">
+          <h2 className="translate-y-[150px] text-3xl font-bold">
+            opening portal...
+          </h2>
+          <LoaderHive />
+        </div>
+      ) : (
+        <>
+          <Card className="max-w-4xl">
+            <CardHeader>
+              <CardTitle>Open a new Portal</CardTitle>
+              <CardDescription>
+                Please configurate your new cross-chain multisig wallet.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <CreatePortalForm
+                handleAddOwnerInputField={handleAddOwnerInputField}
+                handleRemoveOwnerInputField={handleRemoveOwnerInputField}
+                handleOnOwnerInputChange={handleOnOwnerInputChange}
+                handleOnConfirmationInputChange={
+                  handleOnConfirmationInputChange
+                }
+                ownersAddresses={ownersAddresses}
+              />
+            </CardContent>
+            <CardFooter>
+              {errorMsg && <span className="text-rose-600">{errorMsg}</span>}
+              <Button className="ml-auto" onClick={handleSubmit}>
+                Submit
+              </Button>
+            </CardFooter>
+          </Card>
+        </>
+      )}
+    </div>
+  )
 }

@@ -4,7 +4,7 @@ import classes from "./header.module.scss"
 // Components
 import Link from "next/link"
 import Image from "next/image"
-import NavigationMenu from "../navigation-menu/navigation-menu"
+import NavigationMenu from "../navigation-menu"
 import CustomConnectButton from "../ui/custom-connect-button"
 
 export const Header = () => {

@@ -17,25 +17,24 @@ import Copy from "../ui/copy/copy"
 import LoaderHive from "../ui/loader-hive/loader-hive"
 import { useToast } from "@/components/ui/use-toast"
 // Utils
-import {
-  ContractCallType,
-  ToastParams,
-  callContract,
-  getShortenedAddress,
-} from "@/lib/utils"
+import { getShortenedAddress } from "@/lib/utils"
 // Services
 import { PayFeesIn, TokenContext } from "@/services/TokenContext"
-import { Chain, registeredChains } from "@/services/data/chains"
 // React
 import { useContext, useEffect, useState } from "react"
 import { PORTALSIG_WALLET_CONTRACT_ABI } from "@/constants/constants"
 // Wagmi / Viem
 import { Address, formatUnits } from "viem"
 import { useAccount } from "wagmi"
-import { getNetwork } from "@wagmi/core"
 // Styles
 import classes from "./transaction-card.module.scss"
 import { Portal } from "@/types/Portal"
+import {
+  ChainContext,
+  ContractCallType,
+  ToastParams,
+} from "@/services/ChainContext"
+import CustomToastAction from "../ui/custom-toast-action"
 
 interface TransactionCardProps {
   transactionId: number
@@ -50,10 +49,12 @@ export default function TransactionCard({
   portalSig,
   fetchPortalTransactions,
 }: TransactionCardProps) {
-  const { chain } = getNetwork()
   const { address } = useAccount()
   const { toast } = useToast()
+
+  const { callContract, getChainBySelector } = useContext(ChainContext)
   const { getTokenByAddress } = useContext(TokenContext)
+
   const [isLoading, setIsLoading] = useState<boolean>(true)
   const [isConfirmedByAccount, setIsConfirmedByAccount] =
     useState<boolean>(false)
@@ -79,21 +80,6 @@ export default function TransactionCard({
     }
   }, [address, transaction])
 
-  function getChainBySelector(chainSelector: string): Chain | null {
-    if (chainSelector === "0" && chain) {
-      return {
-        name: chain.name,
-        chainSelector: "0",
-        chainId: chain.id.toString(),
-        supportedTokens: [],
-      }
-    }
-    return (
-      registeredChains.find((chain) => chain.chainSelector === chainSelector) ||
-      null
-    )
-  }
-
   async function onConfirm() {
     setIsLoading(true)
     try {
@@ -107,7 +93,8 @@ export default function TransactionCard({
       onCallCompleted(
         {
           title: "Transaction confirmed !",
-          description: result.contractAddress,
+          transactionHash: result.transactionHash,
+          description: "See on block explorer",
         },
         true
       )
@@ -132,7 +119,8 @@ export default function TransactionCard({
       onCallCompleted(
         {
           title: "Transaction revoked !",
-          description: result.contractAddress,
+          transactionHash: result.transactionHash,
+          description: "See on block explorer",
         },
         true
       )
@@ -157,7 +145,8 @@ export default function TransactionCard({
       onCallCompleted(
         {
           title: "Transaction executed !",
-          description: result.contractAddress,
+          transactionHash: result.transactionHash,
+          description: "See on block explorer",
         },
         true
       )
@@ -189,10 +178,14 @@ export default function TransactionCard({
   }
 
   function onCallCompleted(
-    { title, description }: ToastParams,
+    { title, description, transactionHash }: ToastParams,
     shouldRefreshTransactions: boolean = false
   ): void {
-    toast({ title, description })
+    toast({
+      title,
+      description,
+      action: <CustomToastAction transactionHash={transactionHash ?? ""} />,
+    })
     setIsLoading(false)
     if (shouldRefreshTransactions) {
       refreshTransactions()

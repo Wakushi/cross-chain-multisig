@@ -4,8 +4,6 @@ import { registeredChains } from "./data/chains"
 import { Token } from "@/types/Token"
 import { Alchemy, Network, TokenMetadataResponse } from "alchemy-sdk"
 import { fetchBalance } from "@wagmi/core"
-import { FetchEventResult } from "next/dist/server/web/types"
-import { ZERO_ADDRESS } from "@/lib/utils"
 
 export interface ChainSupportedTokens {
   chainId: string

@@ -2,7 +2,7 @@
 import { Portal } from "@/types/Portal"
 import { Transaction } from "@/types/Transaction"
 import { TransactionContext } from "@/services/TransactionsContext"
-import TransactionCard from "../transaction-card/transaction-card"
+import TransactionCard from "./transaction-card/transaction-card"
 import { useContext, useEffect, useState } from "react"
 
 interface TransactionListProps {

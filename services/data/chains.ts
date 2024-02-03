@@ -1,11 +1,12 @@
-import { ZERO_ADDRESS } from "@/lib/utils"
 import { Token } from "@/types/Token"
+import { ZERO_ADDRESS } from "@/lib/utils"
 
 export interface Chain {
   name: string
   chainId: string
   chainSelector: string
   supportedTokens: Token[]
+  explorerUrl?: string
 }
 
 export const EthToken: Token = {
@@ -20,6 +21,7 @@ export const registeredChains: Chain[] = [
     name: "Sepolia",
     chainId: "11155111",
     chainSelector: "16015286601757825753",
+    explorerUrl: "https://sepolia.etherscan.io/tx/",
     supportedTokens: [
       EthToken,
       {

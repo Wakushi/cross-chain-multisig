@@ -103,7 +103,7 @@ export default function CreateTransactionDialog({
       fetchPortalTransactions(portalSigAddress)
       toast({
         title: "Transaction created !",
-        description: result.contractAddress,
+        description: result.transactionHash,
       })
     } catch (error: any) {
       setIsSubmitting(false)

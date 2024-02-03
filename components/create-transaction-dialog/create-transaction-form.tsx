@@ -1,3 +1,4 @@
+// Components
 import {
   Select,
   SelectContent,
@@ -17,20 +18,26 @@ import {
 import { Input } from "@/components/ui/input"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Checkbox } from "@/components/ui/checkbox"
+import LoaderSmall from "../ui/loader-small/loader-small"
+import { Button } from "../ui/button"
 
 // React Hook Forms
 import * as z from "zod"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
+
+// React
 import { useContext, useEffect, useState } from "react"
+
+// Types
 import { Token } from "@/types/Token"
+
+// Services / Utils
 import { PayFeesIn, TokenContext } from "@/services/TokenContext"
+import { PortalContext } from "@/services/PortalContext"
+import { registeredChains } from "@/services/data/chains"
 import { ZERO_ADDRESS } from "@/lib/utils"
 import { Address } from "viem"
-import { PortalContext } from "@/services/PortalContext"
-import LoaderSmall from "../ui/loader-small/loader-small"
-import { registeredChains } from "@/services/data/chains"
-import { Button } from "../ui/button"
 
 interface CreateTransactionFormProps {
   createTransaction: (

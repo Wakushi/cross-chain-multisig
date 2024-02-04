@@ -21,18 +21,22 @@ interface PortalContextProviderProps {
 
 interface PortalContextProps {
   portals: Portal[]
+  currentPortal: Portal | null
   getPortal: (portalAddress: Address) => Promise<Portal>
   isExternalChain: (chainSelector: string) => boolean
   getPortalBalance: (portalAddress: Address) => Promise<string>
   getAllPortals: () => Promise<void>
+  setCurrentPortalByAddress: (portalAddress: Address) => Promise<void>
 }
 
 const PortalContext = createContext<PortalContextProps>({
   portals: [],
+  currentPortal: null,
   getPortal: (portalAddress: Address) => Promise.resolve({} as Portal),
   isExternalChain: (chainSelector: string) => false,
   getPortalBalance: (portalAddress: Address) => Promise.resolve(""),
   getAllPortals: () => Promise.resolve(),
+  setCurrentPortalByAddress: (portalAddress: Address) => Promise.resolve(),
 })
 export default function PortalContextProvider(
   props: PortalContextProviderProps
@@ -40,6 +44,7 @@ export default function PortalContextProvider(
   const { address } = useAccount()
   const { chain } = getNetwork()
   const [portals, setPortals] = useState<Portal[]>([])
+  const [currentPortal, setCurrentPortal] = useState<Portal | null>(null)
 
   async function getPortal(portalAddress: Address): Promise<Portal> {
     const savedPortal = findLocalPortal(portalAddress)
@@ -60,6 +65,13 @@ export default function PortalContextProvider(
       requiredConfirmationsAmount: requiredConfirmationsAmount,
       lastTransaction: 0,
     }
+  }
+
+  async function setCurrentPortalByAddress(
+    portalAddress: Address
+  ): Promise<void> {
+    const portal = await getPortal(portalAddress)
+    setCurrentPortal(portal)
   }
 
   async function getAllPortals(): Promise<void> {
@@ -139,10 +151,12 @@ export default function PortalContextProvider(
 
   const context = {
     portals,
+    currentPortal,
     getPortal,
     getAllPortals,
     isExternalChain,
     getPortalBalance,
+    setCurrentPortalByAddress,
   }
 
   return (

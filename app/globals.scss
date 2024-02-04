@@ -1,82 +1,104 @@
 @import "../styles/fonts.scss";
-@import "../styles//custom-scrollbar.scss";
+@import "../styles/custom-scrollbar.scss";
+@import "../styles/colors.scss";
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
-	:root {
-		--background: 222.2 84% 4.9%;
-		--foreground: 210 40% 98%;
-		--card: 222.2 84% 4.9%;
-		--card-foreground: 210 40% 98%;
-		--popover: 222.2 84% 4.9%;
-		--popover-foreground: 210 40% 98%;
-		--primary: 210 40% 98%;
-		--primary-foreground: 222.2 47.4% 11.2%;
-		--secondary: 217.2 32.6% 17.5%;
-		--secondary-foreground: 210 40% 98%;
-		--muted: 217.2 32.6% 17.5%;
-		--muted-foreground: 215 20.2% 65.1%;
-		--accent: 217.2 32.6% 17.5%;
-		--accent-foreground: 210 40% 98%;
-		--destructive: 0 62.8% 30.6%;
-		--destructive-foreground: 210 40% 98%;
-		--border: 217.2 32.6% 17.5%;
-		--input: 217.2 32.6% 17.5%;
-		--ring: 212.7 26.8% 83.9;
-		--radius: 0.75rem;
-	}
+  :root {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 210 40% 98%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 212.7 26.8% 83.9;
+    --radius: 0.75rem;
+  }
 
-	.dark {
-		--background: 222.2 84% 4.9%;
-		--foreground: 210 40% 98%;
-		--card: 222.2 84% 4.9%;
-		--card-foreground: 210 40% 98%;
-		--popover: 222.2 84% 4.9%;
-		--popover-foreground: 210 40% 98%;
-		--primary: 210 40% 98%;
-		--primary-foreground: 222.2 47.4% 11.2%;
-		--secondary: 217.2 32.6% 17.5%;
-		--secondary-foreground: 210 40% 98%;
-		--muted: 217.2 32.6% 17.5%;
-		--muted-foreground: 215 20.2% 65.1%;
-		--accent: 217.2 32.6% 17.5%;
-		--accent-foreground: 210 40% 98%;
-		--destructive: 0 62.8% 30.6%;
-		--destructive-foreground: 210 40% 98%;
-		--border: 217.2 32.6% 17.5%;
-		--input: 217.2 32.6% 17.5%;
-		--ring: 212.7 26.8% 83.9;
-	}
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 210 40% 98%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 212.7 26.8% 83.9;
+  }
 }
 
 body {
-	font-family: var(--secondary-font);
-	color: #fff;
+  font-family: var(--secondary-font);
+  color: #fff;
+}
+
+.brand {
+  color: var(--primary-color);
+}
+
+.bg-grey {
+  background: var(--bg-color-gradient);
+}
+
+.bg-grey-dark {
+  background-color: var(--bg-color-grey-dark);
+}
+
+.link-active {
+  background-color: var(--bg-color-highlight);
+
+  .icon,
+  span {
+    color: var(--primary-color) !important;
+  }
 }
 
 .fas {
-	cursor: pointer;
+  cursor: pointer;
 }
 
 .fade-in {
-	animation: fade-in 500ms ease-in-out forwards;
+  animation: fade-in 500ms ease-in-out forwards;
 }
 
 .fade-in-delayed {
-	animation: fade-in 700ms 3s ease-in-out forwards;
+  animation: fade-in 700ms 3s ease-in-out forwards;
 }
 
 @keyframes fade-in {
-	0% {
-		transform: translateY(20px);
-		opacity: 0;
-	}
+  0% {
+    transform: translateY(20px);
+    opacity: 0;
+  }
 
-	100% {
-		transform: translateY(0px);
-		opacity: 1;
-	}
+  100% {
+    transform: translateY(0px);
+    opacity: 1;
+  }
 }

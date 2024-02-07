@@ -1,5 +1,12 @@
 import { Token } from "@/types/Token"
 import { ZERO_ADDRESS } from "@/lib/utils"
+import ethIcon from "@/assets/icons/ethereum.svg"
+import optimismIcon from "@/assets/icons/optimism.svg"
+import polygonIcon from "@/assets/icons/polygon.svg"
+import fujiIcon from "@/assets/icons/avalanche.svg"
+import bnbIcon from "@/assets/icons/bnb.svg"
+import baseIcon from "@/assets/icons/base.svg"
+import arbitrumIcon from "@/assets/icons/arbitrum.svg"
 
 export interface Chain {
   name: string
@@ -7,6 +14,7 @@ export interface Chain {
   chainSelector: string
   supportedTokens: Token[]
   explorerUrl?: string
+  icon: string
 }
 
 export const EthToken: Token = {
@@ -18,7 +26,7 @@ export const EthToken: Token = {
 
 export const registeredChains: Chain[] = [
   {
-    name: "Sepolia",
+    name: "Ethereum Sepolia",
     chainId: "11155111",
     chainSelector: "16015286601757825753",
     explorerUrl: "https://sepolia.etherscan.io/tx/",
@@ -37,6 +45,7 @@ export const registeredChains: Chain[] = [
         decimals: 18,
       },
     ],
+    icon: ethIcon.src,
   },
   {
     name: "Optimism Goerli",
@@ -74,6 +83,7 @@ export const registeredChains: Chain[] = [
         symbol: "CCIP-LnM",
       },
     ],
+    icon: optimismIcon.src,
   },
   {
     name: "Polygon Mumbai",
@@ -111,9 +121,10 @@ export const registeredChains: Chain[] = [
         decimals: 6,
       },
     ],
+    icon: polygonIcon.src,
   },
   {
-    name: "Fuji",
+    name: "Avalanche Fuji",
     chainId: "43113",
     chainSelector: "14767482510784806043",
     supportedTokens: [
@@ -196,6 +207,7 @@ export const registeredChains: Chain[] = [
         decimals: 6,
       },
     ],
+    icon: fujiIcon.src,
   },
   {
     name: "BNB chain",
@@ -215,6 +227,7 @@ export const registeredChains: Chain[] = [
         decimals: 18,
       },
     ],
+    icon: bnbIcon.src,
   },
   {
     name: "Base Goerli",
@@ -234,6 +247,7 @@ export const registeredChains: Chain[] = [
         decimals: 18,
       },
     ],
+    icon: baseIcon.src,
   },
   {
     name: "Arbitrum Sepolia",
@@ -265,5 +279,6 @@ export const registeredChains: Chain[] = [
         decimals: 6,
       },
     ],
+    icon: arbitrumIcon.src,
   },
 ]

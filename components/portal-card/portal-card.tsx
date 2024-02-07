@@ -1,12 +1,12 @@
 "use client"
 // Components
 import {
-	Card,
-	CardContent,
-	CardDescription,
-	CardFooter,
-	CardHeader,
-	CardTitle
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
 } from "@/components/ui/card"
 import Copy from "../ui/copy/copy"
 // Utils
@@ -26,73 +26,62 @@ import { faWallet } from "@fortawesome/free-solid-svg-icons"
 import vectorImg from "@/assets/images/vector.png"
 
 export default function PortalCard({ portal, view }: PortalCardProps) {
-	const { address, owners, balance, numberOfTransactions } = portal
-	const router = useRouter()
+  const { address, owners, balance, numberOfTransactions } = portal
+  const router = useRouter()
 
-	function navigateToPortal(portalAddress: Address): void {
-		router.push(`/portals/${portalAddress}`)
-	}
+  function navigateToPortal(portalAddress: Address): void {
+    router.push(`/portals/${portalAddress}`)
+  }
 
-	function isDetailedView(): boolean {
-		return view === PortalCardView.DETAIL
-	}
+  function isDetailedView(): boolean {
+    return view === PortalCardView.DETAIL
+  }
 
-	return (
-		<Card
-			key={address}
-			className={`${classes.portal_card} ${
-				isDetailedView() ? classes.detail : classes.small
-			}`}
-			onClick={() => navigateToPortal(address)}
-		>
-			<div className="relative z-[2]">
-				<CardHeader>
-					<CardTitle
-						className={`${classes.title} flex justify-between`}
-					>
-						<div>
-							{getShortenedAddress(address)}
-							<Copy contentToCopy={address} />
-						</div>
-						<FontAwesomeIcon
-							icon={faWallet}
-							className={classes.wallet_icon}
-						/>
-					</CardTitle>
-					<CardDescription>
-						{numberOfTransactions} transaction
-						{+numberOfTransactions > 1 ? "s" : ""}
-					</CardDescription>
-				</CardHeader>
-				<CardContent>
-					<h3>Owners</h3>
-					<ul className={classes.owner_list}>
-						{owners?.map((owner: Address) => (
-							<li key={owner}>
-								{owner} <Copy contentToCopy={owner} />
-							</li>
-						))}
-					</ul>
-				</CardContent>
-				<CardFooter className="flex justify-between items-center">
-					<div className="flex items-center gap-1">
-						<p>{balance} </p>
-						<Image
-							src={ethIcon}
-							style={{ filter: "invert(1)" }}
-							alt="Ethereum logo"
-							width={10}
-							height={10}
-						/>
-					</div>
-					{isDetailedView() && (
-						<CreateTransactionDialog portalSigAddress={address} />
-					)}
-				</CardFooter>
-			</div>
-			<div className={classes.background}>
-				<Image src={vectorImg} alt="Background lines" />
-			</div>
-		</Card>
-	)
+  return (
+    <Card
+      key={address}
+      className={`${classes.portal_card} ${
+        isDetailedView() ? classes.detail : classes.small
+      }`}
+      onClick={() => navigateToPortal(address)}
+    >
+      <div className="relative z-[2]">
+        <CardHeader>
+          <CardTitle className={`${classes.title} flex justify-between`}>
+            <div>
+              {getShortenedAddress(address)}
+              <Copy contentToCopy={address} />
+            </div>
+            <FontAwesomeIcon icon={faWallet} className={classes.wallet_icon} />
+          </CardTitle>
+          <CardDescription>
+            {numberOfTransactions} transaction
+            {+numberOfTransactions > 1 ? "s" : ""}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <h3>Owners</h3>
+          <ul className={classes.owner_list}>
+            {owners?.map((owner: Address) => (
+              <li key={owner}>
+                {owner} <Copy contentToCopy={owner} />
+              </li>
+            ))}
+          </ul>
+        </CardContent>
+        <CardFooter className="flex justify-between items-center">
+          <div className="flex items-center">
+            <p>{balance} </p>
+            <Image src={ethIcon} alt="Ethereum logo" width={30} height={30} />
+          </div>
+          {isDetailedView() && (
+            <CreateTransactionDialog portalSigAddress={address} />
+          )}
+        </CardFooter>
+      </div>
+      <div className={classes.background}>
+        <Image src={vectorImg} alt="Background lines" />
+      </div>
+    </Card>
+  )
 }

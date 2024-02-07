@@ -1,13 +1,23 @@
 "use client"
+// Components
 import { Card, CardContent } from "@/components/ui/card"
+import MenuLink from "@/components/portal-details-page/menu-link"
 import LoaderHive from "@/components/ui/loader-hive/loader-hive"
+// Services / Utils
 import { PortalContext } from "@/services/PortalContext"
-import { faChartLine, faRightLeft } from "@fortawesome/free-solid-svg-icons"
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
-import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { ReactNode, useContext, useEffect, useState } from "react"
 import { Address } from "viem"
+// Assets
+import {
+  faBackward,
+  faChartLine,
+  faCircleChevronLeft,
+  faGear,
+  faMoneyBillTransfer,
+  faPiggyBank,
+  faRightLeft,
+} from "@fortawesome/free-solid-svg-icons"
 
 interface PortalPageLayoutProps {
   children: ReactNode
@@ -56,34 +66,48 @@ export default function PortalPageLayout({
           </div>
           {/* NAVIGATION */}
           <div className="flex flex-col">
-            <Link
+            <MenuLink
+              href="/portals"
+              isActive={false}
+              icon={faCircleChevronLeft}
+            >
+              Back to Portal list
+            </MenuLink>
+            <MenuLink
               href={`/portals/${params.portalId}`}
-              className={`flex items-center gap-4 p-4 ${
-                isActiveEndpoint("/") ? "link-active" : ""
-              }`}
+              isActive={isActiveEndpoint("/")}
+              icon={faChartLine}
             >
-              <FontAwesomeIcon
-                className="icon text-slate-400"
-                icon={faChartLine}
-              />{" "}
-              <span className="font-light text-sm text-slate-400">
-                Dashboard
-              </span>
-            </Link>
-            <Link
+              Dashboard
+            </MenuLink>
+            <MenuLink
               href={`/portals/${params.portalId}/transactions`}
-              className={`flex items-center gap-4 p-4 ${
-                isActiveEndpoint("transactions") ? "link-active" : ""
-              }`}
+              isActive={isActiveEndpoint("transactions")}
+              icon={faRightLeft}
             >
-              <FontAwesomeIcon
-                className="icon text-slate-400"
-                icon={faRightLeft}
-              />{" "}
-              <span className="font-light text-sm text-slate-400">
-                Transactions
-              </span>
-            </Link>
+              Transactions
+            </MenuLink>
+            <MenuLink
+              href={`/portals/${params.portalId}/deposit`}
+              isActive={isActiveEndpoint("deposit")}
+              icon={faPiggyBank}
+            >
+              Deposit
+            </MenuLink>
+            <MenuLink
+              href={`/portals/${params.portalId}/swap`}
+              isActive={isActiveEndpoint("swap")}
+              icon={faMoneyBillTransfer}
+            >
+              Swap
+            </MenuLink>
+            <MenuLink // -> Chain whitelisting feature
+              href={`/portals/${params.portalId}/settings`}
+              isActive={isActiveEndpoint("settings")}
+              icon={faGear}
+            >
+              Manage Portal
+            </MenuLink>
           </div>
         </div>
         <CardContent className="p-6 pt-20 w-full min-h-screen border-white">

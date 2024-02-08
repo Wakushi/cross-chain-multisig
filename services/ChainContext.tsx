@@ -80,6 +80,7 @@ export default function ChainContextProvider(props: ChainContextProviderProps) {
         chainSelector: "0",
         chainId: chain.id.toString(),
         supportedTokens: [],
+        icon: "",
       }
     }
     return (

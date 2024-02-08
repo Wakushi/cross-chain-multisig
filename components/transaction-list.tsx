@@ -2,8 +2,9 @@
 import { Portal } from "@/types/Portal"
 import { Transaction } from "@/types/Transaction"
 import { TransactionContext } from "@/services/TransactionsContext"
-import TransactionCard from "./transaction-card/transaction-card"
 import { useContext, useEffect, useState } from "react"
+import { DataTable } from "./transactions-table/data-table"
+import { columns } from "./transactions-table/columns"
 
 interface TransactionListProps {
   portal: Portal
@@ -28,18 +29,8 @@ export default function TransactionList({ portal }: TransactionListProps) {
   }, [allPortalsTransactions])
 
   return (
-    <div className="flex justify-center flex-wrap gap-5 mt-5">
-      {transactions.map((transaction, index) => {
-        return (
-          <TransactionCard
-            key={index}
-            transactionId={index}
-            transaction={transaction}
-            portalSig={portal}
-            fetchPortalTransactions={fetchPortalTransactions}
-          />
-        )
-      })}
+    <div>
+      <DataTable columns={columns} data={transactions} />
     </div>
   )
 }

@@ -32,39 +32,36 @@ import { ZERO_ADDRESS } from "@/lib/utils"
 import CreateTransactionForm from "./create-transaction-form"
 import { TransactionContext } from "@/services/TransactionsContext"
 
-interface CreateTransactionDialogProps {
-  portalSigAddress: Address
-}
-
-export default function CreateTransactionDialog({
-  portalSigAddress,
-}: CreateTransactionDialogProps) {
-  // Context & Utils
+export default function CreateTransactionDialog() {
   const { chain } = getNetwork()
   const { toast } = useToast()
+
   const { allSupportedTokens, getAllAddressTokens } = useContext(TokenContext)
-  const { isExternalChain } = useContext(PortalContext)
+  const { currentPortal, isExternalChain } = useContext(PortalContext)
   const { fetchPortalTransactions } = useContext(TransactionContext)
+
   const [isLoading, setIsLoading] = useState<boolean>(true)
   const [open, setOpen] = useState<boolean>(false)
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false)
 
   useEffect(() => {
-    if (portalSigAddress && allSupportedTokens.length) {
-      getAllAddressTokens(portalSigAddress).then((portalTokens: Token[]) => {
-        allSupportedTokens.map((chainSupportedTokens) => {
-          if (+chainSupportedTokens.chainId === chain?.id) {
-            chainSupportedTokens.supportedTokens = [...portalTokens]
-            chainSupportedTokens.supportedTokens.unshift({
-              address: ZERO_ADDRESS,
-              name: "Ethereum",
-              symbol: "ETH",
-              decimals: 18,
-            })
-          }
-        })
-        setIsLoading(false)
-      })
+    if (currentPortal?.address && allSupportedTokens.length) {
+      getAllAddressTokens(currentPortal.address).then(
+        (portalTokens: Token[]) => {
+          allSupportedTokens.map((chainSupportedTokens) => {
+            if (+chainSupportedTokens.chainId === chain?.id) {
+              chainSupportedTokens.supportedTokens = [...portalTokens]
+              chainSupportedTokens.supportedTokens.unshift({
+                address: ZERO_ADDRESS,
+                name: "Ethereum",
+                symbol: "ETH",
+                decimals: 18,
+              })
+            }
+          })
+          setIsLoading(false)
+        }
+      )
     }
   }, [allSupportedTokens])
 
@@ -77,12 +74,13 @@ export default function CreateTransactionDialog({
     executesOnRequirementMet: boolean,
     payFeesIn: string
   ): Promise<void> {
+    if (!currentPortal) return
     try {
       destinationChainSelector = isExternalChain(destinationChainSelector)
         ? destinationChainSelector
         : "0"
       const { request } = await prepareWriteContract({
-        address: portalSigAddress,
+        address: currentPortal.address,
         abi: PORTALSIG_WALLET_CONTRACT_ABI,
         functionName: "createTransaction",
         args: [
@@ -100,7 +98,7 @@ export default function CreateTransactionDialog({
       const result = await waitForTransaction({ hash })
       setIsSubmitting(false)
       setOpen(false)
-      fetchPortalTransactions(portalSigAddress)
+      fetchPortalTransactions()
       toast({
         title: "Transaction created !",
         description: result.transactionHash,
@@ -113,6 +111,10 @@ export default function CreateTransactionDialog({
         description: error.message,
       })
     }
+  }
+
+  if (!currentPortal) {
+    return <LoaderHive />
   }
 
   return (
@@ -139,7 +141,7 @@ export default function CreateTransactionDialog({
             <CreateTransactionForm
               createTransaction={createTransaction}
               isLoading={isLoading}
-              portalSigAddress={portalSigAddress}
+              portalSigAddress={currentPortal?.address}
               setIsSubmitting={setIsSubmitting}
             />
           </>

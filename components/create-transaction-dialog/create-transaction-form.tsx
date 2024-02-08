@@ -286,7 +286,7 @@ export default function CreateTransactionForm({
               <FormItem>
                 <FormLabel>Amount</FormLabel>
                 <FormControl>
-                  <Input type="number" placeholder="0" {...field} />
+                  <Input placeholder="0" {...field} />
                 </FormControl>
                 <FormDescription>Amount of tokens to send.</FormDescription>
                 <FormMessage />

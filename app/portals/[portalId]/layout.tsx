@@ -10,7 +10,6 @@ import { ReactNode, useContext, useEffect, useState } from "react"
 import { Address } from "viem"
 // Assets
 import {
-  faBackward,
   faChartLine,
   faCircleChevronLeft,
   faGear,
@@ -111,7 +110,7 @@ export default function PortalPageLayout({
           </div>
         </div>
         <CardContent className="p-6 pt-20 w-full min-h-screen border-white">
-          <Card className="w-full h-full">{children} </Card>
+          <Card className="w-full h-fit">{children} </Card>
         </CardContent>
       </Card>
     </div>

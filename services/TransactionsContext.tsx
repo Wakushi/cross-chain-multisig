@@ -1,8 +1,11 @@
-import { Transaction } from "@/types/Transaction"
-import { createContext, ReactNode, useState } from "react"
+import { Transaction, TransactionStatus } from "@/types/Transaction"
+import { createContext, ReactNode, useContext, useState } from "react"
 import { Address } from "viem"
-import { readContract } from "@wagmi/core"
+import { readContract, getAccount } from "@wagmi/core"
 import { PORTALSIG_WALLET_CONTRACT_ABI } from "@/constants/constants"
+import { PortalContext } from "./PortalContext"
+import { ChainContext, ContractCallType } from "./ChainContext"
+import { Portal } from "@/types/Portal"
 
 interface PortalTransactions {
   portalAddress: string
@@ -15,7 +18,7 @@ interface TransactionContextProviderProps {
 
 interface TransactionContextProps {
   allPortalsTransactions: PortalTransactions[]
-  fetchPortalTransactions: (portalAddress: Address) => Promise<void>
+  fetchPortalTransactions: () => Promise<void>
   getPortalTransactions: (portalAddress: Address) => Transaction[]
 }
 
@@ -32,20 +35,33 @@ const TransactionContext = createContext<TransactionContextProps>({
 export default function TransactionContextProvider(
   props: TransactionContextProviderProps
 ) {
+  const { currentPortal } = useContext(PortalContext)
+  const { callContract } = useContext(ChainContext)
   const [allPortalsTransactions, setAllPortalsTransactions] = useState<
     PortalTransactions[]
   >([])
 
-  async function fetchPortalTransactions(
-    portalAddress: Address
-  ): Promise<void> {
-    if (!portalAddress) return
+  async function fetchPortalTransactions(): Promise<void> {
+    if (!currentPortal) return
+
     const transactions: any = await readContract({
-      address: portalAddress,
+      address: currentPortal.address,
       abi: PORTALSIG_WALLET_CONTRACT_ABI,
       functionName: "getTransactions",
     })
-    handlePortalTransactionsStorage(portalAddress, transactions)
+
+    for (let i = 0; i < transactions.length; i++) {
+      const transaction = transactions[i]
+      transaction.id = i
+      transaction.status = await getTransactionStatus(
+        currentPortal,
+        transaction,
+        i
+      )
+      transaction.portal = currentPortal
+    }
+
+    handlePortalTransactionsStorage(currentPortal.address, transactions)
   }
 
   function handlePortalTransactionsStorage(
@@ -78,6 +94,50 @@ export default function TransactionContextProvider(
       (portal) => portal.portalAddress === portalAddress
     )
     return portalTransactions?.transactions || []
+  }
+
+  async function isConfirmedByAccount(
+    portal: Portal,
+    transactionId: number,
+    accountAddress: Address
+  ): Promise<boolean> {
+    const isConfirmed: any = await callContract({
+      contractAddress: portal.address,
+      abi: PORTALSIG_WALLET_CONTRACT_ABI,
+      method: "isConfirmedByAccount",
+      args: [transactionId, accountAddress],
+      type: ContractCallType.READ,
+    })
+    return isConfirmed
+  }
+
+  function hasEnoughConfirmations(
+    portal: Portal,
+    transaction: Transaction
+  ): boolean {
+    return (
+      transaction.numberOfConfirmations.toString() ===
+      portal.requiredConfirmationsAmount
+    )
+  }
+
+  async function getTransactionStatus(
+    portal: Portal,
+    transaction: Transaction,
+    transactionId: number
+  ): Promise<TransactionStatus> {
+    const account = getAccount()
+    if (transaction.executed) {
+      return TransactionStatus.EXECUTED
+    } else if (hasEnoughConfirmations(portal, transaction)) {
+      return TransactionStatus.APPROVED
+    } else if (
+      account.address &&
+      (await isConfirmedByAccount(portal, transactionId, account.address))
+    ) {
+      return TransactionStatus.CONFIRMED
+    }
+    return TransactionStatus.WAITING_FOR_APPROVAL
   }
 
   const context = {

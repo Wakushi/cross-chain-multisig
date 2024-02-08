@@ -1,26 +1,45 @@
 "use client"
-
-import { PayFeesIn, TokenContext } from "@/services/TokenContext"
-import { Token } from "@/types/Token"
-import { Transaction } from "@/types/Transaction"
+// Components
 import { ColumnDef } from "@tanstack/react-table"
-import { useContext } from "react"
-import { formatUnits } from "viem"
 import Copy from "../ui/copy/copy"
-import { MoreHorizontal } from "lucide-react"
+import { ArrowUpDown, MoreHorizontal } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { getShortenedAddress } from "@/lib/utils"
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
-import { faCircleInfo } from "@fortawesome/free-solid-svg-icons"
+import {
+  faBan,
+  faCheck,
+  faCheckDouble,
+  faCircleInfo,
+  faClock,
+  faThumbsUp,
+} from "@fortawesome/free-solid-svg-icons"
 import TooltipWrapper from "../ui/custom-tooltip"
+import CustomToastAction from "../ui/custom-toast-action"
+import { useToast } from "@/components/ui/use-toast"
+import LoaderSmall from "../ui/loader-small/loader-small"
+// Types
+import { Token } from "@/types/Token"
+import { Transaction, TransactionStatus } from "@/types/Transaction"
+// Services and utils
+import { formatUnits } from "viem"
+import { PayFeesIn, TokenContext } from "@/services/TokenContext"
+import {
+  ChainContext,
+  ContractCallType,
+  ToastParams,
+} from "@/services/ChainContext"
+import { PORTALSIG_WALLET_CONTRACT_ABI } from "@/constants/constants"
+import { TransactionContext } from "@/services/TransactionsContext"
+import { getShortenedAddress } from "@/lib/utils"
+// React
+import { useContext, useState } from "react"
 
 export const columns: ColumnDef<Transaction>[] = [
   {
@@ -36,8 +55,34 @@ export const columns: ColumnDef<Transaction>[] = [
     },
   },
   {
+    accessorKey: "destinationChainSelector",
+    header: () => <div className="text-left">Destination Chain</div>,
+    cell: ({ row }) => {
+      const { getChainBySelector } = useContext(ChainContext)
+      const chainMetadata = getChainBySelector(
+        String(row.getValue("destinationChainSelector"))
+      )
+
+      return (
+        <div className="text-left font-medium flex items-center">
+          {chainMetadata?.name}{" "}
+        </div>
+      )
+    },
+  },
+  {
     accessorKey: "amount",
-    header: () => <div className="text-left">Amount</div>,
+    header: ({ column }) => {
+      return (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        >
+          Amount
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      )
+    },
     cell: ({ row }) => {
       const amount = formatUnits(row.getValue("amount"), 18)
       const { getTokenByAddress } = useContext(TokenContext)
@@ -51,11 +96,24 @@ export const columns: ColumnDef<Transaction>[] = [
   },
   {
     accessorKey: "numberOfConfirmations",
-    header: () => <div className="text-center">Confirmations</div>,
+    header: ({ column }) => {
+      return (
+        <div className="flex justify-center">
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          >
+            Confirmations
+            <ArrowUpDown className="ml-2 h-4 w-4" />
+          </Button>
+        </div>
+      )
+    },
     cell: ({ row }) => {
       return (
         <div className="text-center font-medium">
-          {Number(row.getValue("numberOfConfirmations"))}
+          {Number(row.getValue("numberOfConfirmations"))} /{" "}
+          {row.original.portal.requiredConfirmationsAmount}
         </div>
       )
     },
@@ -73,14 +131,21 @@ export const columns: ColumnDef<Transaction>[] = [
   },
   {
     accessorKey: "data",
-    header: "Data",
-  },
-  {
-    accessorKey: "executed",
-    header: () => <div className="text-center">Executed</div>,
+    header: () => <div className="text-center">Data</div>,
     cell: ({ row }) => {
-      const executed = row.getValue("executed") ? "Yes" : "No"
-      return <div className="text-center font-medium">{executed}</div>
+      const data: string =
+        row.getValue("data") === "0x" ? "" : row.getValue("data")
+      return (
+        <div className="text-center font-medium">
+          {data ? (
+            data
+          ) : (
+            <TooltipWrapper message="No data associated to this transaction.">
+              <FontAwesomeIcon icon={faBan} />
+            </TooltipWrapper>
+          )}
+        </div>
+      )
     },
   },
   {
@@ -110,9 +175,166 @@ export const columns: ColumnDef<Transaction>[] = [
     },
   },
   {
+    id: "status",
+    header: () => <div className="text-center">Status</div>,
+    cell: ({ row }) => {
+      const status = (row.original as Transaction).status
+      const getStatusIcon = (status: TransactionStatus): JSX.Element => {
+        switch (status) {
+          case TransactionStatus.EXECUTED:
+            return (
+              <FontAwesomeIcon
+                icon={faCheckDouble}
+                style={{ color: "#4af770", fontSize: "1.3rem" }}
+              />
+            )
+          case TransactionStatus.APPROVED:
+            return (
+              <FontAwesomeIcon
+                icon={faThumbsUp}
+                style={{ color: "#9d45f5", fontSize: "1.3rem" }}
+              />
+            )
+          case TransactionStatus.CONFIRMED:
+            return (
+              <FontAwesomeIcon
+                icon={faCheck}
+                style={{ color: "#5ce9ff", fontSize: "1.3rem" }}
+              />
+            )
+          default:
+            return (
+              <FontAwesomeIcon
+                icon={faClock}
+                style={{ color: "#fff", fontSize: "1.3rem" }}
+              />
+            )
+        }
+      }
+      return (
+        <div className="flex justify-center">
+          <TooltipWrapper message={`Status: ${status}`}>
+            {getStatusIcon(status)}
+          </TooltipWrapper>
+        </div>
+      )
+    },
+  },
+  {
     id: "actions",
     cell: ({ row }) => {
       const transaction = row.original
+      const status = transaction.status
+      const { toast } = useToast()
+      const { fetchPortalTransactions } = useContext(TransactionContext)
+      const { callContract } = useContext(ChainContext)
+
+      const [isLoading, setIsLoading] = useState<boolean>(false)
+
+      function refreshTransactions(): void {
+        fetchPortalTransactions()
+      }
+
+      async function onConfirm() {
+        setIsLoading(true)
+        try {
+          const result = await callContract({
+            contractAddress: transaction.portal.address,
+            abi: PORTALSIG_WALLET_CONTRACT_ABI,
+            method: "confirmTransaction",
+            args: [transaction.id],
+            type: ContractCallType.WRITE,
+          })
+          onCallCompleted(
+            {
+              title: "Transaction confirmed !",
+              transactionHash: result.transactionHash,
+              description: "See on block explorer",
+            },
+            true
+          )
+        } catch (error: any) {
+          onCallCompleted({
+            title: "Something went wrong !",
+            description: error.message,
+          })
+        }
+      }
+
+      async function onRevoke() {
+        setIsLoading(true)
+        try {
+          const result = await callContract({
+            contractAddress: transaction.portal.address,
+            abi: PORTALSIG_WALLET_CONTRACT_ABI,
+            method: "revokeConfirmation",
+            args: [transaction.id],
+            type: ContractCallType.WRITE,
+          })
+          onCallCompleted(
+            {
+              title: "Transaction revoked !",
+              transactionHash: result.transactionHash,
+              description: "See on block explorer",
+            },
+            true
+          )
+        } catch (error: any) {
+          onCallCompleted({
+            title: "Something went wrong !",
+            description: error.message,
+          })
+        }
+      }
+
+      async function onExecute() {
+        setIsLoading(true)
+        try {
+          const result = await callContract({
+            contractAddress: transaction.portal.address,
+            abi: PORTALSIG_WALLET_CONTRACT_ABI,
+            method: "executeTransaction",
+            args: [transaction.id],
+            type: ContractCallType.WRITE,
+          })
+          onCallCompleted(
+            {
+              title: "Transaction executed !",
+              transactionHash: result.transactionHash,
+              description: "See on block explorer",
+            },
+            true
+          )
+        } catch (error: any) {
+          onCallCompleted({
+            title: "Something went wrong !",
+            description: error.message,
+          })
+        }
+      }
+
+      function onCallCompleted(
+        { title, description, transactionHash }: ToastParams,
+        shouldRefreshTransactions: boolean = false
+      ): void {
+        toast({
+          title,
+          description,
+          action: <CustomToastAction transactionHash={transactionHash ?? ""} />,
+        })
+        setIsLoading(false)
+        if (shouldRefreshTransactions) {
+          refreshTransactions()
+        }
+      }
+
+      if (isLoading) {
+        return (
+          <div className="max-w-[30px] scale-75">
+            <LoaderSmall />
+          </div>
+        )
+      }
 
       return (
         <DropdownMenu>
@@ -123,22 +345,25 @@ export const columns: ColumnDef<Transaction>[] = [
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-            <DropdownMenuItem
-              onClick={() =>
-                navigator.clipboard.writeText(transaction.destination)
-              }
-            >
-              Copy payment ID
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem>View customer</DropdownMenuItem>
-            <DropdownMenuItem>View payment details</DropdownMenuItem>
+            {status === TransactionStatus.EXECUTED && (
+              <DropdownMenuItem>No action available</DropdownMenuItem>
+            )}
+            {status === TransactionStatus.WAITING_FOR_APPROVAL && (
+              <DropdownMenuItem onClick={onConfirm}>Confirm</DropdownMenuItem>
+            )}
+            {(status === TransactionStatus.CONFIRMED ||
+              status === TransactionStatus.APPROVED) && (
+              <DropdownMenuItem onClick={onRevoke}>Revoke</DropdownMenuItem>
+            )}
+            {status === TransactionStatus.APPROVED && (
+              <>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={onExecute}>Execute</DropdownMenuItem>
+              </>
+            )}
           </DropdownMenuContent>
         </DropdownMenu>
       )
     },
   },
 ]
-
-//

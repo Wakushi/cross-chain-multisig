@@ -20,7 +20,7 @@ export default function TransactionList({ portal }: TransactionListProps) {
 
   useEffect(() => {
     if (portal) {
-      fetchPortalTransactions(portal.address)
+      fetchPortalTransactions()
     }
   }, [])
 

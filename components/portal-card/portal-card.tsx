@@ -74,9 +74,7 @@ export default function PortalCard({ portal, view }: PortalCardProps) {
             <p>{balance} </p>
             <Image src={ethIcon} alt="Ethereum logo" width={30} height={30} />
           </div>
-          {isDetailedView() && (
-            <CreateTransactionDialog portalSigAddress={address} />
-          )}
+          {isDetailedView() && <CreateTransactionDialog />}
         </CardFooter>
       </div>
       <div className={classes.background}>

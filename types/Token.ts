@@ -7,4 +7,6 @@ export interface Token {
   decimals: number
   logo?: string
   balance?: string
+  price?: number
+  value?: number
 }

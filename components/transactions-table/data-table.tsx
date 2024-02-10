@@ -73,16 +73,12 @@ export function DataTable<TData, TValue>({
     },
   })
 
-  if (!data) {
-    return <LoaderHive />
-  }
-
   return (
     <>
       <div className="flex items-center justify-between p-2">
         <div className="flex gap-2">
           <Input
-            placeholder="0x00..."
+            placeholder="Destinator : 0x00..."
             value={
               (table.getColumn("destination")?.getFilterValue() as string) ?? ""
             }
@@ -195,7 +191,7 @@ export function DataTable<TData, TValue>({
           </TableBody>
         </Table>
       </div>
-      <div className="border-t flex items-center justify-end space-x-2 p-4">
+      <div className="border-t flex items-center justify-end space-x-2 p-2">
         <DataTablePagination table={table} />
       </div>
     </>
@@ -203,6 +199,7 @@ export function DataTable<TData, TValue>({
 }
 
 const columnsLabels = {
+  initiator: "Initiator",
   destination: "Destinator",
   destinationChainSelector: "Destination Chain",
   amount: "Amount",

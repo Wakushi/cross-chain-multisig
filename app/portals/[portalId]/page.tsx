@@ -6,14 +6,18 @@ import { TokenContext } from "@/services/TokenContext"
 import { Token } from "@/types/Token"
 import Image from "next/image"
 import { useContext, useEffect, useState } from "react"
+import tokenFallback from "@/assets/icons/token-fallback.svg"
 
 export default function DashboardPage() {
-  const { getAllAddressTokens } = useContext(TokenContext)
+  const { allAddressTokens, getAllAddressTokens } = useContext(TokenContext)
   const { currentPortal } = useContext(PortalContext)
 
   const [tokens, setTokens] = useState<Token[]>([])
 
   useEffect(() => {
+    if (allAddressTokens.length > 0) {
+      setTokens(allAddressTokens)
+    }
     if (currentPortal) {
       getAllAddressTokens(currentPortal?.address).then((tokens: Token[]) => {
         setTokens(tokens)
@@ -52,7 +56,7 @@ export default function DashboardPage() {
                   <div className="flex gap-4 items-center flex-1">
                     <div className="bg-slate-800 w-10 h-10 p-2 rounded">
                       <Image
-                        src={token.logo ? token.logo : ""}
+                        src={token.logo ? token.logo : tokenFallback.src}
                         alt={token.name}
                         width={100}
                         height={100}
@@ -63,8 +67,10 @@ export default function DashboardPage() {
                       <div className="text-sm brand">{token.balance}</div>
                     </div>
                   </div>
-                  <div className="flex-1">Price</div>
-                  <div className="flex-1">Value</div>
+                  <div className="flex-1 brand">
+                    ${token.price?.toFixed(4) ?? 0}
+                  </div>
+                  <div className="flex-1">${token.value?.toFixed(4) ?? 0}</div>
                 </Card>
               ))}
             </div>

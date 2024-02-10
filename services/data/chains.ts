@@ -44,7 +44,6 @@ export const registeredChains: Chain[] = [
         name: "ChainLink Token",
         symbol: "LINK",
         decimals: 18,
-        
       },
       {
         address: "0xfd57b4ddbf88a4e07ff4e34c487b99af2fe82a05",

@@ -38,6 +38,7 @@ import { PortalContext } from "@/services/PortalContext"
 import { registeredChains } from "@/services/data/chains"
 import { ZERO_ADDRESS } from "@/lib/utils"
 import { Address } from "viem"
+import Image from "next/image"
 
 interface CreateTransactionFormProps {
   createTransaction: (
@@ -159,7 +160,7 @@ export default function CreateTransactionForm({
     createTransaction(
       destination as Address,
       destinationChainSelector,
-      token as Address, 
+      token as Address,
       amount,
       data,
       executesOnRequirementMet,
@@ -220,9 +221,17 @@ export default function CreateTransactionForm({
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {registeredChains.map(({ name, chainSelector }) => (
+                      {registeredChains.map(({ name, chainSelector, icon }) => (
                         <SelectItem key={chainSelector} value={chainSelector}>
-                          {name}
+                          <div className="flex items-center gap-2">
+                            <Image
+                              src={icon}
+                              alt={`${name} logo`}
+                              width={25}
+                              height={25}
+                            />{" "}
+                            <div>{name}</div>
+                          </div>
                         </SelectItem>
                       ))}
                     </SelectContent>

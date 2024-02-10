@@ -26,6 +26,7 @@ interface TokenContextProps {
   getAllAddressTokens: (address: Address, network?: Network) => Promise<Token[]>
   getTokenByAddress: (tokenAddress: Address) => Token | null
   getERC20TokenBalance: (account: Address, token: Token) => Promise<any>
+  allAddressTokens: Token[]
 }
 
 const TokenContext = createContext<TokenContextProps>({
@@ -39,11 +40,13 @@ const TokenContext = createContext<TokenContextProps>({
   getERC20TokenBalance: async () => {
     return
   },
+  allAddressTokens: [],
 })
 export default function TokenContextProvider(props: TokenContextProviderProps) {
   const [allSupportedTokens, setAllSupportedTokens] = useState<
     ChainSupportedTokens[]
   >([])
+  const [allAddressTokens, setAllAddressTokens] = useState<Token[]>([])
 
   useEffect(() => {
     async function getChainsSupportedTokens() {
@@ -114,6 +117,15 @@ export default function TokenContextProvider(props: TokenContextProviderProps) {
         logo: metadata.logo || "",
       })
     }
+
+    for (let token of addressTokens) {
+      token.price = await getERC20TokenPrice(token)
+      if (token.balance && token.price) {
+        token.value = token.price * +token.balance
+      }
+    }
+
+    setAllAddressTokens(addressTokens)
     return addressTokens
   }
 
@@ -139,11 +151,27 @@ export default function TokenContextProvider(props: TokenContextProviderProps) {
     return balance
   }
 
+  async function getERC20TokenPrice(token: Token): Promise<number> {
+    return fetch(
+      `https://api.mobula.io/api/1/market/data?asset=${token.name.toUpperCase()}`,
+      {
+        method: "GET",
+        headers: {
+          Authorization: process.env.NEXT_PUBLIC_MOBULA_API_KEY ?? "",
+        },
+      }
+    )
+      .then((response) => response.json())
+      .then(({ data }) => data?.price)
+      .catch((err) => console.error(err))
+  }
+
   const context = {
     allSupportedTokens,
     getAllAddressTokens,
     getTokenByAddress,
     getERC20TokenBalance,
+    allAddressTokens,
   }
 
   return (

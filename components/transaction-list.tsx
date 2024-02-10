@@ -28,9 +28,5 @@ export default function TransactionList({ portal }: TransactionListProps) {
     setTransactions(getPortalTransactions(portal.address))
   }, [allPortalsTransactions])
 
-  return (
-    <div>
-      <DataTable columns={columns} data={transactions} />
-    </div>
-  )
+  return <DataTable columns={columns} data={transactions} />
 }

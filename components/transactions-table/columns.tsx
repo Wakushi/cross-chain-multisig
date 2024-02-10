@@ -37,14 +37,22 @@ import { ChainContext, ContractCallType } from "@/services/ChainContext"
 import { PORTALSIG_WALLET_CONTRACT_ABI } from "@/constants/constants"
 import { TransactionContext } from "@/services/TransactionsContext"
 import { getShortenedAddress } from "@/lib/utils"
-import { Chain, registeredChains } from "@/services/data/chains"
-import { getNetwork } from "@wagmi/core"
-import { CCIP_EXPLORER_URL } from "@/constants/constants"
 // React
 import { useContext, useState } from "react"
-import { PortalContext } from "@/services/PortalContext"
 
 export const columns: ColumnDef<Transaction>[] = [
+  {
+    accessorKey: "initiator",
+    header: () => <div className="text-left">Initiator</div>,
+    cell: ({ row }) => {
+      return (
+        <div className="text-left font-medium flex items-center">
+          {getShortenedAddress(row.getValue("initiator"))}{" "}
+          <Copy contentToCopy={row.getValue("initiator")} />
+        </div>
+      )
+    },
+  },
   {
     accessorKey: "destination",
     header: () => <div className="text-left">Destinator</div>,
@@ -125,12 +133,47 @@ export const columns: ColumnDef<Transaction>[] = [
     },
   },
   {
-    accessorKey: "gasLimit",
-    header: () => <div className="text-center">Gas Limit</div>,
+    accessorKey: "createdAt",
+    header: () => <div className="text-center">Created at</div>,
     cell: ({ row }) => {
+      const date = new Date(Number(row.getValue("createdAt")) * 1000)
+      let options: Intl.DateTimeFormatOptions = {
+        year: "2-digit",
+        month: "numeric",
+        day: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+        hour12: true,
+      }
       return (
         <div className="text-center font-medium">
-          {Number(row.getValue("gasLimit"))}
+          {date.toLocaleString("en-US", options)}
+        </div>
+      )
+    },
+  },
+  {
+    accessorKey: "executedAt",
+    header: () => <div className="text-center">Executed at</div>,
+    cell: ({ row }) => {
+      const timestamp = Number(row.getValue("executedAt"))
+
+      if (!timestamp) {
+        return <div className="text-center font-medium">-</div>
+      }
+
+      const date = new Date(timestamp * 1000)
+      let options: Intl.DateTimeFormatOptions = {
+        year: "2-digit",
+        month: "numeric",
+        day: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+        hour12: true,
+      }
+      return (
+        <div className="text-center font-medium">
+          {date.toLocaleString("en-US", options)}
         </div>
       )
     },
@@ -223,6 +266,17 @@ export const columns: ColumnDef<Transaction>[] = [
           <TooltipWrapper message={`Status: ${status}`}>
             {getStatusIcon(status)}
           </TooltipWrapper>
+        </div>
+      )
+    },
+  },
+  {
+    accessorKey: "gasLimit",
+    header: () => <div className="text-center">Gas Limit</div>,
+    cell: ({ row }) => {
+      return (
+        <div className="text-center font-medium">
+          {Number(row.getValue("gasLimit"))}
         </div>
       )
     },

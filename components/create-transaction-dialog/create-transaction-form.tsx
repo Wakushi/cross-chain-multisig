@@ -41,9 +41,9 @@ import { Address } from "viem"
 
 interface CreateTransactionFormProps {
   createTransaction: (
-    destination: string,
+    destination: Address,
     destinationChainSelector: string,
-    token: string,
+    token: Address,
     amount: string,
     data: string,
     executesOnRequirementMet: boolean,
@@ -74,9 +74,9 @@ export default function CreateTransactionForm({
   setIsSubmitting,
 }: CreateTransactionFormProps) {
   // Context
-  const { allSupportedTokens, getTokenByAddress, getTokenBalance } =
+  const { allSupportedTokens, getTokenByAddress, getERC20TokenBalance } =
     useContext(TokenContext)
-  const { isExternalChain, getPortalBalance } = useContext(PortalContext)
+  const { isExternalChain, getPortalETHBalance } = useContext(PortalContext)
 
   // State
   const [selectedChain, setSelectedChain] = useState<string>("")
@@ -108,16 +108,16 @@ export default function CreateTransactionForm({
   useEffect(() => {
     if (selectedToken) {
       if (selectedToken === ZERO_ADDRESS) {
-        updateDisplayedNativeBalance()
+        updateDisplayedETHBalance()
         return
       }
       const token = getTokenByAddress(selectedToken as Address)
       if (token) {
-        updateDisplayedTokenBalance(token)
+        updateDisplayedERC20TokenBalance(token)
       }
 
-      async function updateDisplayedNativeBalance() {
-        const balance = await getPortalBalance(portalSigAddress)
+      async function updateDisplayedETHBalance() {
+        const balance = await getPortalETHBalance(portalSigAddress)
         setSelectedTokenBalance(balance)
       }
     }
@@ -133,9 +133,9 @@ export default function CreateTransactionForm({
     return []
   }
 
-  async function updateDisplayedTokenBalance(token: Token) {
+  async function updateDisplayedERC20TokenBalance(token: Token) {
     let balance = Number(
-      (await getTokenBalance(portalSigAddress, token))?.value || 0
+      (await getERC20TokenBalance(portalSigAddress, token))?.value || 0
     )
     if (balance) {
       balance = balance / Math.pow(10, token.decimals || 18)
@@ -157,9 +157,9 @@ export default function CreateTransactionForm({
     } = values
 
     createTransaction(
-      destination,
+      destination as Address,
       destinationChainSelector,
-      token,
+      token as Address, 
       amount,
       data,
       executesOnRequirementMet,

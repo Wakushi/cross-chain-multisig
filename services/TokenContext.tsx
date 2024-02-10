@@ -1,9 +1,10 @@
 import { createContext, ReactNode, useEffect, useState } from "react"
 import { Address } from "viem"
-import { registeredChains } from "./data/chains"
+import { registeredChains, tokenLogos } from "./data/chains"
 import { Token } from "@/types/Token"
 import { Alchemy, Network, TokenMetadataResponse } from "alchemy-sdk"
 import { fetchBalance } from "@wagmi/core"
+import { ZERO_ADDRESS } from "@/lib/utils"
 
 export interface ChainSupportedTokens {
   chainId: string
@@ -24,7 +25,7 @@ interface TokenContextProps {
   allSupportedTokens: ChainSupportedTokens[]
   getAllAddressTokens: (address: Address, network?: Network) => Promise<Token[]>
   getTokenByAddress: (tokenAddress: Address) => Token | null
-  getTokenBalance: (account: Address, token: Token) => Promise<any>
+  getERC20TokenBalance: (account: Address, token: Token) => Promise<any>
 }
 
 const TokenContext = createContext<TokenContextProps>({
@@ -35,7 +36,7 @@ const TokenContext = createContext<TokenContextProps>({
   getTokenByAddress: () => {
     return null
   },
-  getTokenBalance: async () => {
+  getERC20TokenBalance: async () => {
     return
   },
 })
@@ -77,20 +78,40 @@ export default function TokenContextProvider(props: TokenContextProviderProps) {
     })
 
     const addressTokens: Token[] = []
+
+    const ethToken: Token = {
+      address: ZERO_ADDRESS,
+      name: "Ethereum",
+      symbol: "ETH",
+      decimals: 18,
+      balance: "0",
+      logo: tokenLogos.ETH,
+    }
+
+    const ethBalance = await (await alchemy.core.getBalance(address)).toString()
+    ethToken.balance = (+ethBalance / Math.pow(10, 18)).toFixed(4)
+    addressTokens.push(ethToken)
+
     for (let token of nonZeroBalances) {
       let balance: any = token.tokenBalance
       const metadata: TokenMetadataResponse =
         await alchemy.core.getTokenMetadata(token.contractAddress)
-      if (balance) {
-        balance = balance / Math.pow(10, metadata.decimals || 18)
-        balance = balance.toFixed(2)
+
+      if (!metadata.logo && metadata.symbol) {
+        metadata.logo = tokenLogos[metadata.symbol as keyof typeof tokenLogos]
       }
+
+      if (balance) {
+        balance = (balance / Math.pow(10, metadata.decimals || 18)).toFixed(4)
+      }
+
       addressTokens.push({
         address: token.contractAddress as Address,
         name: metadata.name || "",
         symbol: metadata.symbol || "",
         decimals: metadata.decimals || 18,
         balance: balance,
+        logo: metadata.logo || "",
       })
     }
     return addressTokens
@@ -107,7 +128,10 @@ export default function TokenContextProvider(props: TokenContextProviderProps) {
     return token || null
   }
 
-  async function getTokenBalance(account: Address, token: Token): Promise<any> {
+  async function getERC20TokenBalance(
+    account: Address,
+    token: Token
+  ): Promise<any> {
     const balance: any = await fetchBalance({
       address: account,
       token: token.address,
@@ -119,7 +143,7 @@ export default function TokenContextProvider(props: TokenContextProviderProps) {
     allSupportedTokens,
     getAllAddressTokens,
     getTokenByAddress,
-    getTokenBalance,
+    getERC20TokenBalance,
   }
 
   return (

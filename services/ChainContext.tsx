@@ -1,5 +1,5 @@
 "use client"
-import { createContext, ReactNode, useState } from "react"
+import { createContext, ReactNode } from "react"
 import { Address } from "viem"
 import {
   prepareWriteContract,
@@ -30,12 +30,6 @@ export interface ContractCallParams {
   method: string
   args: any[]
   type: ContractCallType
-}
-
-export interface ToastParams {
-  title: string
-  description: string
-  transactionHash?: string
 }
 
 const ChainContext = createContext<ChainContextProps>({
@@ -88,16 +82,6 @@ export default function ChainContextProvider(props: ChainContextProviderProps) {
       null
     )
   }
-
-  //   function whitelistChain(chainSelector: string) {
-  //     callContract({
-  //       contractAddress: portal.address,
-  //       abi: PORTALSIG_WALLET_CONTRACT_ABI,
-  //       method: "allowlistDestinationChain",
-  //       args: [chainSelector, true],
-  //       type: ContractCallType.WRITE,
-  //     })
-  //   }
 
   const context = {
     callContract,

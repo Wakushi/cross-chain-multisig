@@ -21,7 +21,10 @@ import {
   faThumbsUp,
 } from "@fortawesome/free-solid-svg-icons"
 import TooltipWrapper from "../ui/custom-tooltip"
-import CustomToastAction from "../ui/custom-toast-action"
+import CustomToastAction, {
+  ToastParams,
+  TransactionToastTitle,
+} from "../ui/custom-toast-action"
 import { useToast } from "@/components/ui/use-toast"
 import LoaderSmall from "../ui/loader-small/loader-small"
 // Types
@@ -30,16 +33,16 @@ import { Transaction, TransactionStatus } from "@/types/Transaction"
 // Services and utils
 import { formatUnits } from "viem"
 import { PayFeesIn, TokenContext } from "@/services/TokenContext"
-import {
-  ChainContext,
-  ContractCallType,
-  ToastParams,
-} from "@/services/ChainContext"
+import { ChainContext, ContractCallType } from "@/services/ChainContext"
 import { PORTALSIG_WALLET_CONTRACT_ABI } from "@/constants/constants"
 import { TransactionContext } from "@/services/TransactionsContext"
 import { getShortenedAddress } from "@/lib/utils"
+import { Chain, registeredChains } from "@/services/data/chains"
+import { getNetwork } from "@wagmi/core"
+import { CCIP_EXPLORER_URL } from "@/constants/constants"
 // React
 import { useContext, useState } from "react"
+import { PortalContext } from "@/services/PortalContext"
 
 export const columns: ColumnDef<Transaction>[] = [
   {
@@ -84,9 +87,12 @@ export const columns: ColumnDef<Transaction>[] = [
       )
     },
     cell: ({ row }) => {
-      const amount = formatUnits(row.getValue("amount"), 18)
       const { getTokenByAddress } = useContext(TokenContext)
       const tokenMetadata: Token | null = getTokenByAddress(row.original.token)
+      const amount = formatUnits(
+        row.getValue("amount"),
+        tokenMetadata?.decimals ?? 18
+      )
       return (
         <div className="text-left font-medium">
           {amount} {tokenMetadata?.symbol}
@@ -175,6 +181,7 @@ export const columns: ColumnDef<Transaction>[] = [
     },
   },
   {
+    accessorKey: "status",
     id: "status",
     header: () => <div className="text-center">Status</div>,
     cell: ({ row }) => {
@@ -224,9 +231,10 @@ export const columns: ColumnDef<Transaction>[] = [
     id: "actions",
     cell: ({ row }) => {
       const transaction = row.original
-      const status = transaction.status
       const { toast } = useToast()
-      const { fetchPortalTransactions } = useContext(TransactionContext)
+
+      const { fetchPortalTransactions, getExplorerUrl } =
+        useContext(TransactionContext)
       const { callContract } = useContext(ChainContext)
 
       const [isLoading, setIsLoading] = useState<boolean>(false)
@@ -247,15 +255,15 @@ export const columns: ColumnDef<Transaction>[] = [
           })
           onCallCompleted(
             {
-              title: "Transaction confirmed !",
-              transactionHash: result.transactionHash,
+              title: TransactionToastTitle.CONFIRMED,
               description: "See on block explorer",
             },
+            result.transactionHash,
             true
           )
         } catch (error: any) {
           onCallCompleted({
-            title: "Something went wrong !",
+            title: TransactionToastTitle.ERROR,
             description: error.message,
           })
         }
@@ -273,15 +281,15 @@ export const columns: ColumnDef<Transaction>[] = [
           })
           onCallCompleted(
             {
-              title: "Transaction revoked !",
-              transactionHash: result.transactionHash,
+              title: TransactionToastTitle.REVOKED,
               description: "See on block explorer",
             },
+            result.transactionHash,
             true
           )
         } catch (error: any) {
           onCallCompleted({
-            title: "Something went wrong !",
+            title: TransactionToastTitle.ERROR,
             description: error.message,
           })
         }
@@ -299,28 +307,33 @@ export const columns: ColumnDef<Transaction>[] = [
           })
           onCallCompleted(
             {
-              title: "Transaction executed !",
-              transactionHash: result.transactionHash,
+              title: TransactionToastTitle.EXECUTED,
               description: "See on block explorer",
             },
+            result.transactionHash,
             true
           )
         } catch (error: any) {
           onCallCompleted({
-            title: "Something went wrong !",
+            title: TransactionToastTitle.ERROR,
             description: error.message,
           })
         }
       }
 
       function onCallCompleted(
-        { title, description, transactionHash }: ToastParams,
+        { title, description }: ToastParams,
+        transactionHash?: string,
         shouldRefreshTransactions: boolean = false
       ): void {
         toast({
           title,
           description,
-          action: <CustomToastAction transactionHash={transactionHash ?? ""} />,
+          action: (
+            <CustomToastAction
+              url={getExplorerUrl(transactionHash ?? "", transaction)}
+            />
+          ),
         })
         setIsLoading(false)
         if (shouldRefreshTransactions) {
@@ -345,17 +358,17 @@ export const columns: ColumnDef<Transaction>[] = [
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            {status === TransactionStatus.EXECUTED && (
+            {transaction.status === TransactionStatus.EXECUTED && (
               <DropdownMenuItem>No action available</DropdownMenuItem>
             )}
-            {status === TransactionStatus.WAITING_FOR_APPROVAL && (
+            {transaction.status === TransactionStatus.WAITING_FOR_APPROVAL && (
               <DropdownMenuItem onClick={onConfirm}>Confirm</DropdownMenuItem>
             )}
-            {(status === TransactionStatus.CONFIRMED ||
-              status === TransactionStatus.APPROVED) && (
+            {(transaction.status === TransactionStatus.CONFIRMED ||
+              transaction.status === TransactionStatus.APPROVED) && (
               <DropdownMenuItem onClick={onRevoke}>Revoke</DropdownMenuItem>
             )}
-            {status === TransactionStatus.APPROVED && (
+            {transaction.status === TransactionStatus.APPROVED && (
               <>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={onExecute}>Execute</DropdownMenuItem>

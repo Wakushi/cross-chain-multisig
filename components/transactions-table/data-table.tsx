@@ -19,6 +19,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import {
   Table,
   TableBody,
   TableCell,
@@ -32,6 +39,7 @@ import { useState } from "react"
 import CreateTransactionDialog from "../create-transaction-dialog/create-transaction-dialog"
 import { Input } from "../ui/input"
 import { DataTablePagination } from "../ui/pagination"
+import { TransactionStatus } from "@/types/Transaction"
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[]
@@ -45,6 +53,8 @@ export function DataTable<TData, TValue>({
   const [sorting, setSorting] = useState<SortingState>([])
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({})
+
+  const transactionStatus = Object.values(TransactionStatus)
 
   const table = useReactTable({
     data,
@@ -70,16 +80,41 @@ export function DataTable<TData, TValue>({
   return (
     <>
       <div className="flex items-center justify-between p-2">
-        <Input
-          placeholder="0x00..."
-          value={
-            (table.getColumn("destination")?.getFilterValue() as string) ?? ""
-          }
-          onChange={(event) =>
-            table.getColumn("destination")?.setFilterValue(event.target.value)
-          }
-          className="max-w-sm"
-        />
+        <div className="flex gap-2">
+          <Input
+            placeholder="0x00..."
+            value={
+              (table.getColumn("destination")?.getFilterValue() as string) ?? ""
+            }
+            onChange={(event) =>
+              table.getColumn("destination")?.setFilterValue(event.target.value)
+            }
+            className="max-w-sm"
+          />
+          <Select
+            value={
+              (table.getColumn("status")?.getFilterValue() as string) ?? "all"
+            }
+            onValueChange={(value) => {
+              table
+                .getColumn("status")
+                ?.setFilterValue(value === "all" ? undefined : value)
+            }}
+          >
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All status</SelectItem>
+              {transactionStatus.map((status) => (
+                <SelectItem key={status} value={status}>
+                  {status}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
         <div className="flex items-center gap-2">
           <CreateTransactionDialog />
           <DropdownMenu>
@@ -93,7 +128,6 @@ export function DataTable<TData, TValue>({
                 .getAllColumns()
                 .filter((column) => column.getCanHide())
                 .map((column) => {
-                  console.log(column.id)
                   return (
                     <DropdownMenuCheckboxItem
                       key={column.id}

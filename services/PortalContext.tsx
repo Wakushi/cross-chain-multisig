@@ -24,7 +24,7 @@ interface PortalContextProps {
   currentPortal: Portal | null
   getPortal: (portalAddress: Address) => Promise<Portal>
   isExternalChain: (chainSelector: string) => boolean
-  getPortalBalance: (portalAddress: Address) => Promise<string>
+  getPortalETHBalance: (portalAddress: Address) => Promise<string>
   getAllPortals: () => Promise<void>
   setCurrentPortalByAddress: (portalAddress: Address) => Promise<void>
 }
@@ -34,7 +34,7 @@ const PortalContext = createContext<PortalContextProps>({
   currentPortal: null,
   getPortal: (portalAddress: Address) => Promise.resolve({} as Portal),
   isExternalChain: (chainSelector: string) => false,
-  getPortalBalance: (portalAddress: Address) => Promise.resolve(""),
+  getPortalETHBalance: (portalAddress: Address) => Promise.resolve(""),
   getAllPortals: () => Promise.resolve(),
   setCurrentPortalByAddress: (portalAddress: Address) => Promise.resolve(),
 })
@@ -52,7 +52,7 @@ export default function PortalContextProvider(
       return savedPortal
     }
     const owners = await getPortalOwners(portalAddress)
-    const balance = await getPortalBalance(portalAddress)
+    const balance = await getPortalETHBalance(portalAddress)
     const transactionsCount = await getTransactionsCount(portalAddress)
     const requiredConfirmationsAmount = await getRequiredConfirmationsAmount(
       portalAddress
@@ -102,7 +102,7 @@ export default function PortalContextProvider(
     return owners
   }
 
-  async function getPortalBalance(portalAddress: Address): Promise<string> {
+  async function getPortalETHBalance(portalAddress: Address): Promise<string> {
     const balance: any = await fetchBalance({
       address: portalAddress,
     })
@@ -155,7 +155,7 @@ export default function PortalContextProvider(
     getPortal,
     getAllPortals,
     isExternalChain,
-    getPortalBalance,
+    getPortalETHBalance,
     setCurrentPortalByAddress,
   }
 

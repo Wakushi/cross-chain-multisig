@@ -1,11 +1,15 @@
 import { Transaction, TransactionStatus } from "@/types/Transaction"
 import { createContext, ReactNode, useContext, useState } from "react"
 import { Address } from "viem"
-import { readContract, getAccount } from "@wagmi/core"
-import { PORTALSIG_WALLET_CONTRACT_ABI } from "@/constants/constants"
+import { readContract, getAccount, getNetwork } from "@wagmi/core"
+import {
+  CCIP_EXPLORER_URL,
+  PORTALSIG_WALLET_CONTRACT_ABI,
+} from "@/constants/constants"
 import { PortalContext } from "./PortalContext"
 import { ChainContext, ContractCallType } from "./ChainContext"
 import { Portal } from "@/types/Portal"
+import { registeredChains } from "./data/chains"
 
 interface PortalTransactions {
   portalAddress: string
@@ -20,6 +24,7 @@ interface TransactionContextProps {
   allPortalsTransactions: PortalTransactions[]
   fetchPortalTransactions: () => Promise<void>
   getPortalTransactions: (portalAddress: Address) => Transaction[]
+  getExplorerUrl: (transactionHash: string, transaction?: Transaction) => string
 }
 
 const TransactionContext = createContext<TransactionContextProps>({
@@ -30,12 +35,17 @@ const TransactionContext = createContext<TransactionContextProps>({
   getPortalTransactions: () => {
     return []
   },
+  getExplorerUrl: () => {
+    return ""
+  },
 })
 
 export default function TransactionContextProvider(
   props: TransactionContextProviderProps
 ) {
-  const { currentPortal } = useContext(PortalContext)
+  const { chain } = getNetwork()
+
+  const { currentPortal, isExternalChain } = useContext(PortalContext)
   const { callContract } = useContext(ChainContext)
   const [allPortalsTransactions, setAllPortalsTransactions] = useState<
     PortalTransactions[]
@@ -140,10 +150,38 @@ export default function TransactionContextProvider(
     return TransactionStatus.WAITING_FOR_APPROVAL
   }
 
+  function getExplorerUrl(
+    transactionHash: string,
+    transaction?: Transaction
+  ): string {
+    if (transaction && triggersCCIPExecution(transaction)) {
+      return CCIP_EXPLORER_URL + transactionHash
+    }
+    const chainData = registeredChains.find(
+      (registeredChain) => +registeredChain.chainId === chain?.id
+    )
+    if (!chainData) {
+      return ""
+    }
+    return chainData.explorerUrl + transactionHash
+  }
+
+  function triggersCCIPExecution(transaction: Transaction): boolean {
+    if (isExternalChain(transaction.destinationChainSelector)) {
+      const { numberOfConfirmations, portal } = transaction
+      const currentConfirmations = numberOfConfirmations.toString()
+      const requiredConfirmations =
+        portal.requiredConfirmationsAmount.toString()
+      return +currentConfirmations === +requiredConfirmations - 1
+    }
+    return false
+  }
+
   const context = {
     allPortalsTransactions,
     fetchPortalTransactions,
     getPortalTransactions,
+    getExplorerUrl,
   }
 
   return (

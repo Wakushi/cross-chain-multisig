@@ -71,7 +71,7 @@ export default function PortalCard({ portal, view }: PortalCardProps) {
         </CardContent>
         <CardFooter className="flex justify-between items-center">
           <div className="flex items-center">
-            <p>{balance} </p>
+            <p>{Number(balance).toFixed(4)} </p>
             <Image src={ethIcon} alt="Ethereum logo" width={30} height={30} />
           </div>
           {isDetailedView() && <CreateTransactionDialog />}

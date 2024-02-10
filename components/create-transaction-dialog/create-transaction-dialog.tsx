@@ -10,35 +10,38 @@ import {
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/components/ui/use-toast"
+import LoaderHive from "../ui/loader-hive/loader-hive"
+import CreateTransactionForm from "./create-transaction-form"
+import CustomToastAction from "../ui/custom-toast-action"
 
 // React
 import { useContext, useEffect, useState } from "react"
 
 // Wagmi / Viem
-import { Address, parseEther } from "viem"
-import {
-  getNetwork,
-  prepareWriteContract,
-  writeContract,
-  waitForTransaction,
-} from "@wagmi/core"
+import { Address, parseUnits } from "viem"
+import { getNetwork } from "@wagmi/core"
 
+// Services & Utils
 import { TokenContext } from "@/services/TokenContext"
-import { Token } from "@/types/Token"
 import { PORTALSIG_WALLET_CONTRACT_ABI } from "@/constants/constants"
-import LoaderHive from "../ui/loader-hive/loader-hive"
 import { PortalContext } from "@/services/PortalContext"
-import { ZERO_ADDRESS } from "@/lib/utils"
-import CreateTransactionForm from "./create-transaction-form"
 import { TransactionContext } from "@/services/TransactionsContext"
+import { ChainContext, ContractCallType } from "@/services/ChainContext"
+
+// Types
+import { Token } from "@/types/Token"
+import { Transaction } from "@/types/Transaction"
 
 export default function CreateTransactionDialog() {
   const { chain } = getNetwork()
   const { toast } = useToast()
 
-  const { allSupportedTokens, getAllAddressTokens } = useContext(TokenContext)
+  const { allSupportedTokens, getAllAddressTokens, getTokenByAddress } =
+    useContext(TokenContext)
   const { currentPortal, isExternalChain } = useContext(PortalContext)
-  const { fetchPortalTransactions } = useContext(TransactionContext)
+  const { fetchPortalTransactions, getExplorerUrl } =
+    useContext(TransactionContext)
+  const { callContract } = useContext(ChainContext)
 
   const [isLoading, setIsLoading] = useState<boolean>(true)
   const [open, setOpen] = useState<boolean>(false)
@@ -51,12 +54,6 @@ export default function CreateTransactionDialog() {
           allSupportedTokens.map((chainSupportedTokens) => {
             if (+chainSupportedTokens.chainId === chain?.id) {
               chainSupportedTokens.supportedTokens = [...portalTokens]
-              chainSupportedTokens.supportedTokens.unshift({
-                address: ZERO_ADDRESS,
-                name: "Ethereum",
-                symbol: "ETH",
-                decimals: 18,
-              })
             }
           })
           setIsLoading(false)
@@ -66,9 +63,9 @@ export default function CreateTransactionDialog() {
   }, [allSupportedTokens])
 
   async function createTransaction(
-    destination: string,
+    destination: Address,
     destinationChainSelector: string,
-    token: string,
+    token: Address,
     amount: string,
     data: string,
     executesOnRequirementMet: boolean,
@@ -79,29 +76,34 @@ export default function CreateTransactionDialog() {
       destinationChainSelector = isExternalChain(destinationChainSelector)
         ? destinationChainSelector
         : "0"
-      const { request } = await prepareWriteContract({
-        address: currentPortal.address,
+      const tokenSent = getTokenByAddress(token)
+      const result = await callContract({
+        contractAddress: currentPortal.address,
         abi: PORTALSIG_WALLET_CONTRACT_ABI,
-        functionName: "createTransaction",
+        method: "createTransaction",
         args: [
           destination,
           token,
           destinationChainSelector,
-          parseEther(amount),
+          parseUnits(amount, tokenSent?.decimals ?? 18),
           data,
           executesOnRequirementMet,
           payFeesIn,
           0,
         ],
+        type: ContractCallType.WRITE,
       })
-      const { hash } = await writeContract(request)
-      const result = await waitForTransaction({ hash })
       setIsSubmitting(false)
       setOpen(false)
       fetchPortalTransactions()
       toast({
         title: "Transaction created !",
-        description: result.transactionHash,
+        description: "See on block explorer",
+        action: (
+          <CustomToastAction
+            url={getExplorerUrl(result.transactionHash ?? "")}
+          />
+        ),
       })
     } catch (error: any) {
       setIsSubmitting(false)
@@ -125,9 +127,9 @@ export default function CreateTransactionDialog() {
       <DialogContent className="sm:max-w-[525px] h-[700px] overflow-auto custom-scrollbar">
         {isSubmitting ? (
           <div className="flex flex-col items-center justify-center">
-            <p className="mb-[22rem] text-center font-light text-2xl">
-              Creating transaction...
-            </p>
+            <h2 className="translate-y-[150px] text-3xl font-bold">
+              creating transaction...
+            </h2>
             <LoaderHive />
           </div>
         ) : (

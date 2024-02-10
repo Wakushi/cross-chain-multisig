@@ -31,6 +31,7 @@ import CreatePortalForm from "@/components/create-portal-form"
 import { Address } from "viem"
 import { useAccount } from "wagmi"
 import { isValidEthereumAddress } from "@/lib/utils"
+import { TransactionContext } from "@/services/TransactionsContext"
 
 export default function CreatePage() {
   const { toast } = useToast()
@@ -38,6 +39,7 @@ export default function CreatePage() {
   const router = useRouter()
 
   const { callContract } = useContext(ChainContext)
+  const { getExplorerUrl } = useContext(TransactionContext)
 
   const [ownersAddresses, setOwnersAddresses] = useState<Address[]>([
     "0x",
@@ -138,7 +140,9 @@ export default function CreatePage() {
         title: "Wallet created !",
         description: "See on block explorer",
         action: (
-          <CustomToastAction transactionHash={result.transactionHash ?? ""} />
+          <CustomToastAction
+            url={getExplorerUrl(result.transactionHash ?? "")}
+          />
         ),
       })
       navigateToPortals()

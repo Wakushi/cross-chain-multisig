@@ -1,30 +1,26 @@
-import { registeredChains } from "@/services/data/chains"
 import { ToastAction } from "./toast"
-import { getNetwork } from "@wagmi/core"
 
-interface CustomToastActionProps {
-  transactionHash: string
+export enum TransactionToastTitle {
+  CONFIRMED = "Transaction confirmed !",
+  REVOKED = "Transaction revoked !",
+  EXECUTED = "Transaction executed !",
+  ERROR = "Something went wrong !",
 }
 
-export default function CustomToastAction({
-  transactionHash,
-}: CustomToastActionProps) {
-  const { chain } = getNetwork()
+export interface ToastParams {
+  title: TransactionToastTitle
+  description: string
+}
 
-  function getExplorerUrl(transactionHash: string) {
-    const chainData = registeredChains.find(
-      (registeredChain) => +registeredChain.chainId === chain?.id
-    )
-    if (!chainData) {
-      return ""
-    }
-    return chainData.explorerUrl + transactionHash
-  }
+interface CustomToastActionProps {
+  url: string
+}
 
+export default function CustomToastAction({ url }: CustomToastActionProps) {
   return (
     <ToastAction
       altText="See details"
-      onClick={() => window.open(getExplorerUrl(transactionHash), "_blank")}
+      onClick={() => window.open(url, "_blank")}
     >
       See details
     </ToastAction>

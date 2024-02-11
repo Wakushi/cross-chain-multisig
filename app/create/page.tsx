@@ -15,6 +15,8 @@ import {
 } from "@/components/ui/card"
 import { useToast } from "@/components/ui/use-toast"
 import LoaderHive from "@/components/ui/loader-hive/loader-hive"
+import CustomToastAction from "@/components/ui/custom-toast-action"
+import CreatePortalForm from "@/components/create-portal-form"
 
 // Constants
 import {
@@ -26,11 +28,8 @@ import {
 
 // Wagmi
 import { ChainContext, ContractCallType } from "@/services/ChainContext"
-import CustomToastAction from "@/components/ui/custom-toast-action"
-import CreatePortalForm from "@/components/create-portal-form"
-import { Address } from "viem"
+import { Address, isAddress } from "viem"
 import { useAccount } from "wagmi"
-import { isValidEthereumAddress } from "@/lib/utils"
 import { TransactionContext } from "@/services/TransactionsContext"
 
 export default function CreatePage() {
@@ -108,7 +107,7 @@ export default function CreatePage() {
 
   function areAddressesValid(ownerAddresses: Address[]): boolean {
     return ownerAddresses.every((address) => {
-      return address.length === 42 && isValidEthereumAddress(address)
+      return address.length === 42 && isAddress(address)
     })
   }
 
@@ -135,7 +134,6 @@ export default function CreatePage() {
         ],
         type: ContractCallType.WRITE,
       })
-      setIsLoading(false)
       toast({
         title: "Wallet created !",
         description: "See on block explorer",
@@ -147,11 +145,12 @@ export default function CreatePage() {
       })
       navigateToPortals()
     } catch (error: any) {
-      setIsLoading(false)
       toast({
         title: "Something went wrong !",
         description: error.message,
       })
+    } finally {
+      setIsLoading(false)
     }
   }
 

@@ -11,28 +11,17 @@ import { ChainContext, ContractCallType } from "./ChainContext"
 import { Portal } from "@/types/Portal"
 import { registeredChains } from "./data/chains"
 
-interface PortalTransactions {
-  portalAddress: string
-  transactions: Transaction[]
-}
-
 interface TransactionContextProviderProps {
   children: ReactNode
 }
 
 interface TransactionContextProps {
-  allPortalsTransactions: PortalTransactions[]
-  fetchPortalTransactions: () => Promise<void>
-  getPortalTransactions: (portalAddress: Address) => Transaction[]
+  getPortalTransactions: () => Promise<Transaction[]>
   getExplorerUrl: (transactionHash: string, transaction?: Transaction) => string
 }
 
 const TransactionContext = createContext<TransactionContextProps>({
-  allPortalsTransactions: [],
-  fetchPortalTransactions: async () => {
-    return
-  },
-  getPortalTransactions: () => {
+  getPortalTransactions: async () => {
     return []
   },
   getExplorerUrl: () => {
@@ -44,15 +33,11 @@ export default function TransactionContextProvider(
   props: TransactionContextProviderProps
 ) {
   const { chain } = getNetwork()
-
   const { currentPortal, isExternalChain } = useContext(PortalContext)
   const { callContract } = useContext(ChainContext)
-  const [allPortalsTransactions, setAllPortalsTransactions] = useState<
-    PortalTransactions[]
-  >([])
 
-  async function fetchPortalTransactions(): Promise<void> {
-    if (!currentPortal) return
+  async function getPortalTransactions(): Promise<Transaction[]> {
+    if (!currentPortal) return []
 
     const transactions: any = await readContract({
       address: currentPortal.address,
@@ -71,39 +56,7 @@ export default function TransactionContextProvider(
       transaction.portal = currentPortal
     }
 
-    handlePortalTransactionsStorage(currentPortal.address, transactions)
-  }
-
-  function handlePortalTransactionsStorage(
-    portalAddress: Address,
-    transactions: Transaction[]
-  ) {
-    if (!allPortalsTransactions.length) {
-      setAllPortalsTransactions([
-        { portalAddress: portalAddress, transactions: transactions },
-      ])
-      return
-    }
-    const portalIndex = allPortalsTransactions.findIndex(
-      (portal) => portal.portalAddress === portalAddress
-    )
-    if (portalIndex > -1) {
-      const newPortalTransactions = allPortalsTransactions
-      newPortalTransactions[portalIndex].transactions = transactions
-      setAllPortalsTransactions([...newPortalTransactions])
-    } else {
-      setAllPortalsTransactions((prev) => [
-        ...prev,
-        { portalAddress: portalAddress, transactions: transactions },
-      ])
-    }
-  }
-
-  function getPortalTransactions(portalAddress: Address): Transaction[] {
-    const portalTransactions = allPortalsTransactions.find(
-      (portal) => portal.portalAddress === portalAddress
-    )
-    return portalTransactions?.transactions || []
+    return transactions
   }
 
   async function isConfirmedByAccount(
@@ -178,8 +131,6 @@ export default function TransactionContextProvider(
   }
 
   const context = {
-    allPortalsTransactions,
-    fetchPortalTransactions,
     getPortalTransactions,
     getExplorerUrl,
   }

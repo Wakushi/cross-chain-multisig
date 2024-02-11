@@ -15,52 +15,46 @@ import CreateTransactionForm from "./create-transaction-form"
 import CustomToastAction from "../ui/custom-toast-action"
 
 // React
-import { useContext, useEffect, useState } from "react"
+import { useContext, useState } from "react"
+import { useQuery, useQueryClient } from "@tanstack/react-query"
 
 // Wagmi / Viem
 import { Address, parseUnits } from "viem"
-import { getNetwork } from "@wagmi/core"
 
 // Services & Utils
-import { TokenContext } from "@/services/TokenContext"
+import { ChainSupportedTokens, TokenContext } from "@/services/TokenContext"
 import { PORTALSIG_WALLET_CONTRACT_ABI } from "@/constants/constants"
 import { PortalContext } from "@/services/PortalContext"
 import { TransactionContext } from "@/services/TransactionsContext"
 import { ChainContext, ContractCallType } from "@/services/ChainContext"
 
-// Types
-import { Token } from "@/types/Token"
-import { Transaction } from "@/types/Transaction"
-
 export default function CreateTransactionDialog() {
-  const { chain } = getNetwork()
   const { toast } = useToast()
+  const queryClient = useQueryClient()
 
-  const { allSupportedTokens, getAllAddressTokens, getTokenByAddress } =
-    useContext(TokenContext)
+  const { getTokenByAddress, getAllSupportedTokens } = useContext(TokenContext)
   const { currentPortal, isExternalChain } = useContext(PortalContext)
-  const { fetchPortalTransactions, getExplorerUrl } =
-    useContext(TransactionContext)
+  const { getExplorerUrl } = useContext(TransactionContext)
   const { callContract } = useContext(ChainContext)
 
-  const [isLoading, setIsLoading] = useState<boolean>(true)
   const [open, setOpen] = useState<boolean>(false)
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false)
 
-  useEffect(() => {
-    if (currentPortal?.address && allSupportedTokens.length) {
-      getAllAddressTokens(currentPortal.address).then(
-        (portalTokens: Token[]) => {
-          allSupportedTokens.map((chainSupportedTokens) => {
-            if (+chainSupportedTokens.chainId === chain?.id) {
-              chainSupportedTokens.supportedTokens = [...portalTokens]
-            }
-          })
-          setIsLoading(false)
-        }
-      )
+  const { data: allSupportedTokens, isLoading } = useQuery<
+    ChainSupportedTokens[],
+    Error
+  >(
+    ["allSupportedTokens", currentPortal?.address],
+    () => {
+      if (!currentPortal?.address) {
+        throw new Error("Portal address is undefined")
+      }
+      return getAllSupportedTokens()
+    },
+    {
+      enabled: !!currentPortal?.address,
     }
-  }, [allSupportedTokens])
+  )
 
   async function createTransaction(
     destination: Address,
@@ -93,9 +87,7 @@ export default function CreateTransactionDialog() {
         ],
         type: ContractCallType.WRITE,
       })
-      setIsSubmitting(false)
-      setOpen(false)
-      fetchPortalTransactions()
+      queryClient.invalidateQueries(["transactions", currentPortal?.address])
       toast({
         title: "Transaction created !",
         description: "See on block explorer",
@@ -106,17 +98,14 @@ export default function CreateTransactionDialog() {
         ),
       })
     } catch (error: any) {
-      setIsSubmitting(false)
-      setOpen(false)
       toast({
         title: "Something went wrong !",
         description: error.message,
       })
+    } finally {
+      setOpen(false)
+      setIsSubmitting(false)
     }
-  }
-
-  if (!currentPortal) {
-    return <LoaderHive />
   }
 
   return (
@@ -142,8 +131,8 @@ export default function CreateTransactionDialog() {
             </DialogHeader>
             <CreateTransactionForm
               createTransaction={createTransaction}
+              allSupportedTokens={allSupportedTokens}
               isLoading={isLoading}
-              portalSigAddress={currentPortal?.address}
               setIsSubmitting={setIsSubmitting}
             />
           </>

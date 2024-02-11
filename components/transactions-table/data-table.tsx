@@ -33,7 +33,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import LoaderHive from "../ui/loader-hive/loader-hive"
 import { Button } from "@/components/ui/button"
 import { useState } from "react"
 import CreateTransactionDialog from "../create-transaction-dialog/create-transaction-dialog"
@@ -206,6 +205,8 @@ const columnsLabels = {
   numberOfConfirmations: "Confirmations",
   gasLimit: "Gas Limit",
   data: "Data",
+  createdAt: "Created At",
+  executedAt: "Executed At",
   executed: "Executed",
   executesOnRequirementMet: "Auto-Executes",
   payFeesIn: "Pay Fees In",

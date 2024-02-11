@@ -8,6 +8,7 @@ import bnbIcon from "@/assets/icons/bnb.svg"
 import baseIcon from "@/assets/icons/base.svg"
 import arbitrumIcon from "@/assets/icons/arbitrum.svg"
 import usdc from "@/assets/icons/USDC.svg"
+import weth from "@/assets/icons/weth.webp"
 
 export interface Chain {
   name: string
@@ -21,9 +22,10 @@ export interface Chain {
 export const tokenLogos = {
   USDC: usdc.src,
   ETH: ethIcon.src,
+  WETH: weth.src,
 }
 
-export const EthToken: Token = {
+export const ethToken: Token = {
   address: ZERO_ADDRESS,
   name: "Ethereum",
   symbol: "ETH",
@@ -38,7 +40,7 @@ export const registeredChains: Chain[] = [
     chainSelector: "16015286601757825753",
     explorerUrl: "https://sepolia.etherscan.io/tx/",
     supportedTokens: [
-      EthToken,
+      ethToken,
       {
         address: "0x779877a7b0d9e8603169ddbd7836e478b4624789",
         name: "ChainLink Token",
@@ -46,7 +48,7 @@ export const registeredChains: Chain[] = [
         decimals: 18,
       },
       {
-        address: "0xfd57b4ddbf88a4e07ff4e34c487b99af2fe82a05",
+        address: "0xFd57b4ddBf88a4e07fF4e34C487b99af2Fe82a05",
         name: "CCIP-BnM",
         symbol: "CCIP-BnM",
         decimals: 18,

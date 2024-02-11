@@ -20,22 +20,20 @@ interface PortalContextProviderProps {
 }
 
 interface PortalContextProps {
-  portals: Portal[]
   currentPortal: Portal | null
   getPortal: (portalAddress: Address) => Promise<Portal>
   isExternalChain: (chainSelector: string) => boolean
   getPortalETHBalance: (portalAddress: Address) => Promise<string>
-  getAllPortals: () => Promise<void>
+  getAllPortals: () => Promise<Portal[]>
   setCurrentPortalByAddress: (portalAddress: Address) => Promise<void>
 }
 
 const PortalContext = createContext<PortalContextProps>({
-  portals: [],
   currentPortal: null,
   getPortal: (portalAddress: Address) => Promise.resolve({} as Portal),
   isExternalChain: (chainSelector: string) => false,
   getPortalETHBalance: (portalAddress: Address) => Promise.resolve(""),
-  getAllPortals: () => Promise.resolve(),
+  getAllPortals: () => Promise.resolve([]),
   setCurrentPortalByAddress: (portalAddress: Address) => Promise.resolve(),
 })
 export default function PortalContextProvider(
@@ -43,14 +41,9 @@ export default function PortalContextProvider(
 ) {
   const { address } = useAccount()
   const { chain } = getNetwork()
-  const [portals, setPortals] = useState<Portal[]>([])
   const [currentPortal, setCurrentPortal] = useState<Portal | null>(null)
 
   async function getPortal(portalAddress: Address): Promise<Portal> {
-    const savedPortal = findLocalPortal(portalAddress)
-    if (savedPortal) {
-      return savedPortal
-    }
     const owners = await getPortalOwners(portalAddress)
     const balance = await getPortalETHBalance(portalAddress)
     const transactionsCount = await getTransactionsCount(portalAddress)
@@ -74,13 +67,13 @@ export default function PortalContextProvider(
     setCurrentPortal(portal)
   }
 
-  async function getAllPortals(): Promise<void> {
+  async function getAllPortals(): Promise<Portal[]> {
     const portals: Portal[] = []
     for (let portalAddress of await getPortalAddresses()) {
       const portal = await getPortal(portalAddress)
       portals.push(portal)
     }
-    savePortals(portals)
+    return portals
   }
 
   async function getPortalAddresses(): Promise<Address[]> {
@@ -129,14 +122,6 @@ export default function PortalContextProvider(
     return requiredConfirmationsAmount.toString()
   }
 
-  function savePortals(portals: Portal[]): void {
-    setPortals(portals)
-  }
-
-  function findLocalPortal(portalAddress: Address): Portal | undefined {
-    return portals.find((portal) => portal.address === portalAddress)
-  }
-
   function getPortalChain(): Chain | undefined {
     return registeredChains.find(
       (registeredChain) => +registeredChain.chainId === chain?.id
@@ -150,7 +135,6 @@ export default function PortalContextProvider(
   }
 
   const context = {
-    portals,
     currentPortal,
     getPortal,
     getAllPortals,

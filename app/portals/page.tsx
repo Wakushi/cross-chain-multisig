@@ -1,27 +1,27 @@
 "use client"
 // React
-import { useContext, useEffect, useState } from "react"
+import { useContext } from "react"
+import { useQuery } from "@tanstack/react-query"
+
 // Services
 import { PortalContext } from "@/services/PortalContext"
+
 // Components
 import LoaderHive from "@/components/ui/loader-hive/loader-hive"
 import PortalList from "@/components/portal-list"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 
+// Types
+import { Portal } from "@/types/Portal"
+
 export default function PortalsPage() {
-  const [isLoading, setIsLoading] = useState<boolean>(false)
-  const { portals, getAllPortals } = useContext(PortalContext)
+  const { getAllPortals } = useContext(PortalContext)
 
-  useEffect(() => {
-    async function getPortalSigs(): Promise<void> {
-      setIsLoading(true)
-      await getAllPortals()
-      setIsLoading(false)
-    }
-
-    getPortalSigs()
-  }, [])
+  const { data: portals, isLoading } = useQuery<Portal[], Error>(
+    ["portals"],
+    getAllPortals
+  )
 
   if (isLoading) {
     return (
@@ -31,7 +31,7 @@ export default function PortalsPage() {
     )
   }
 
-  if (!portals.length) {
+  if (!portals || !portals.length) {
     return (
       <div className="min-h-screen flex items-center justify-center fade-in">
         <div className="flex flex-col gap-5 justify-center items-center">

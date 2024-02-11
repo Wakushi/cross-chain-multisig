@@ -32,6 +32,7 @@ import { Token } from "@/types/Token"
 import { Transaction, TransactionStatus } from "@/types/Transaction"
 // Services and utils
 import { formatUnits } from "viem"
+import { useQueryClient } from "@tanstack/react-query"
 import { PayFeesIn, TokenContext } from "@/services/TokenContext"
 import { ChainContext, ContractCallType } from "@/services/ChainContext"
 import { PORTALSIG_WALLET_CONTRACT_ABI } from "@/constants/constants"
@@ -39,6 +40,8 @@ import { TransactionContext } from "@/services/TransactionsContext"
 import { getShortenedAddress } from "@/lib/utils"
 // React
 import { useContext, useState } from "react"
+import { PortalContext } from "@/services/PortalContext"
+import Image from "next/image"
 
 export const columns: ColumnDef<Transaction>[] = [
   {
@@ -75,8 +78,14 @@ export const columns: ColumnDef<Transaction>[] = [
       )
 
       return (
-        <div className="text-left font-medium flex items-center">
-          {chainMetadata?.name}{" "}
+        <div className="font-light flex items-center gap-1">
+          <Image
+            src={chainMetadata!.icon}
+            alt={`${chainMetadata?.name} logo`}
+            width={25}
+            height={25}
+          />
+          <p className="text-nowrap">{chainMetadata?.name}</p>
         </div>
       )
     },
@@ -102,7 +111,7 @@ export const columns: ColumnDef<Transaction>[] = [
         tokenMetadata?.decimals ?? 18
       )
       return (
-        <div className="text-left font-medium">
+        <div className="text-nowrap">
           {amount} {tokenMetadata?.symbol}
         </div>
       )
@@ -134,7 +143,19 @@ export const columns: ColumnDef<Transaction>[] = [
   },
   {
     accessorKey: "createdAt",
-    header: () => <div className="text-center">Created at</div>,
+    header: ({ column }) => {
+      return (
+        <div className="flex justify-center">
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          >
+            Created at
+            <ArrowUpDown className="ml-2 h-4 w-4" />
+          </Button>
+        </div>
+      )
+    },
     cell: ({ row }) => {
       const date = new Date(Number(row.getValue("createdAt")) * 1000)
       let options: Intl.DateTimeFormatOptions = {
@@ -154,7 +175,19 @@ export const columns: ColumnDef<Transaction>[] = [
   },
   {
     accessorKey: "executedAt",
-    header: () => <div className="text-center">Executed at</div>,
+    header: ({ column }) => {
+      return (
+        <div className="flex justify-center">
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          >
+            Executed at
+            <ArrowUpDown className="ml-2 h-4 w-4" />
+          </Button>
+        </div>
+      )
+    },
     cell: ({ row }) => {
       const timestamp = Number(row.getValue("executedAt"))
 
@@ -286,15 +319,18 @@ export const columns: ColumnDef<Transaction>[] = [
     cell: ({ row }) => {
       const transaction = row.original
       const { toast } = useToast()
+      const queryClient = useQueryClient()
 
-      const { fetchPortalTransactions, getExplorerUrl } =
+      const { getPortalTransactions, getExplorerUrl } =
         useContext(TransactionContext)
       const { callContract } = useContext(ChainContext)
+      const { currentPortal } = useContext(PortalContext)
 
       const [isLoading, setIsLoading] = useState<boolean>(false)
 
       function refreshTransactions(): void {
-        fetchPortalTransactions()
+        queryClient.invalidateQueries(["transactions", currentPortal?.address])
+        getPortalTransactions()
       }
 
       async function onConfirm() {
@@ -320,6 +356,8 @@ export const columns: ColumnDef<Transaction>[] = [
             title: TransactionToastTitle.ERROR,
             description: error.message,
           })
+        } finally {
+          setIsLoading(false)
         }
       }
 
@@ -346,6 +384,8 @@ export const columns: ColumnDef<Transaction>[] = [
             title: TransactionToastTitle.ERROR,
             description: error.message,
           })
+        } finally {
+          setIsLoading(false)
         }
       }
 
@@ -372,6 +412,8 @@ export const columns: ColumnDef<Transaction>[] = [
             title: TransactionToastTitle.ERROR,
             description: error.message,
           })
+        } finally {
+          setIsLoading(false)
         }
       }
 
@@ -389,7 +431,6 @@ export const columns: ColumnDef<Transaction>[] = [
             />
           ),
         })
-        setIsLoading(false)
         if (shouldRefreshTransactions) {
           refreshTransactions()
         }

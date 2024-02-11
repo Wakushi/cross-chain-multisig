@@ -1,10 +1,15 @@
-import { createContext, ReactNode, useEffect, useState } from "react"
+import { createContext, ReactNode, useContext, useState } from "react"
 import { Address } from "viem"
-import { registeredChains, tokenLogos } from "./data/chains"
+import { ethToken, registeredChains, tokenLogos } from "./data/chains"
 import { Token } from "@/types/Token"
-import { Alchemy, Network, TokenMetadataResponse } from "alchemy-sdk"
-import { fetchBalance } from "@wagmi/core"
-import { ZERO_ADDRESS } from "@/lib/utils"
+import {
+  Alchemy,
+  Network,
+  TokenBalancesResponseErc20,
+  TokenMetadataResponse,
+} from "alchemy-sdk"
+import { fetchBalance, getNetwork } from "@wagmi/core"
+import { PortalContext } from "./PortalContext"
 
 export interface ChainSupportedTokens {
   chainId: string
@@ -22,15 +27,13 @@ interface TokenContextProviderProps {
 }
 
 interface TokenContextProps {
-  allSupportedTokens: ChainSupportedTokens[]
   getAllAddressTokens: (address: Address, network?: Network) => Promise<Token[]>
   getTokenByAddress: (tokenAddress: Address) => Token | null
   getERC20TokenBalance: (account: Address, token: Token) => Promise<any>
-  allAddressTokens: Token[]
+  getAllSupportedTokens: () => Promise<ChainSupportedTokens[]>
 }
 
 const TokenContext = createContext<TokenContextProps>({
-  allSupportedTokens: [],
   getAllAddressTokens: async () => {
     return []
   },
@@ -40,73 +43,66 @@ const TokenContext = createContext<TokenContextProps>({
   getERC20TokenBalance: async () => {
     return
   },
-  allAddressTokens: [],
+  getAllSupportedTokens: async () => {
+    return []
+  },
 })
-export default function TokenContextProvider(props: TokenContextProviderProps) {
-  const [allSupportedTokens, setAllSupportedTokens] = useState<
-    ChainSupportedTokens[]
-  >([])
-  const [allAddressTokens, setAllAddressTokens] = useState<Token[]>([])
 
-  useEffect(() => {
-    async function getChainsSupportedTokens() {
-      const allSupportedTokens: ChainSupportedTokens[] = []
-      for (let registeredChain of registeredChains) {
-        allSupportedTokens.push({
-          chainId: registeredChain.chainId,
-          chainSelector: registeredChain.chainSelector,
-          supportedTokens: registeredChain.supportedTokens,
-        })
-      }
-      setAllSupportedTokens(allSupportedTokens)
+export default function TokenContextProvider(props: TokenContextProviderProps) {
+  const { currentPortal } = useContext(PortalContext)
+  const { chain } = getNetwork()
+
+  async function getAllSupportedTokens(): Promise<ChainSupportedTokens[]> {
+    const allSupportedTokensArray: ChainSupportedTokens[] = []
+    for (let registeredChain of registeredChains) {
+      allSupportedTokensArray.push({
+        chainId: registeredChain.chainId,
+        chainSelector: registeredChain.chainSelector,
+        supportedTokens: registeredChain.supportedTokens,
+      })
     }
 
-    getChainsSupportedTokens()
-  }, [])
+    const portalTokens = await getAllAddressTokens(currentPortal!.address)
+
+    allSupportedTokensArray.map((chainSupportedTokens) => {
+      if (+chainSupportedTokens.chainId === chain?.id) {
+        chainSupportedTokens.supportedTokens = [...portalTokens]
+      }
+    })
+
+    return allSupportedTokensArray
+  }
 
   async function getAllAddressTokens(
     address: Address,
     network?: Network
   ): Promise<Token[]> {
-    const alchemy = new Alchemy({
-      apiKey: process.env.NEXT_PUBLIC_ALCHEMY_API_KEY,
-      network: network ? network : Network.ETH_SEPOLIA,
-    })
-    const balances = await alchemy.core.getTokenBalances(address)
-    const nonZeroBalances = balances.tokenBalances.filter((token: any) => {
-      return (
-        token.tokenBalance !==
-        "0x0000000000000000000000000000000000000000000000000000000000000000"
-      )
-    })
+    const alchemy = getAlchemyInstance(network)
+    const { tokenBalances } = await getAddressTokenBalances(address, alchemy)
 
     const addressTokens: Token[] = []
 
-    const ethToken: Token = {
-      address: ZERO_ADDRESS,
-      name: "Ethereum",
-      symbol: "ETH",
-      decimals: 18,
-      balance: "0",
-      logo: tokenLogos.ETH,
-    }
+    addressTokens.push({
+      ...ethToken,
+      balance: await getEthBalance(address, alchemy),
+    })
 
-    const ethBalance = await (await alchemy.core.getBalance(address)).toString()
-    ethToken.balance = (+ethBalance / Math.pow(10, 18)).toFixed(4)
-    addressTokens.push(ethToken)
+    for (let token of tokenBalances) {
+      if (!token.tokenBalance) continue
 
-    for (let token of nonZeroBalances) {
-      let balance: any = token.tokenBalance
-      const metadata: TokenMetadataResponse =
-        await alchemy.core.getTokenMetadata(token.contractAddress)
+      const metadata: TokenMetadataResponse = await getTokenMetadata(
+        token.contractAddress as Address,
+        alchemy
+      )
 
       if (!metadata.logo && metadata.symbol) {
         metadata.logo = tokenLogos[metadata.symbol as keyof typeof tokenLogos]
       }
 
-      if (balance) {
-        balance = (balance / Math.pow(10, metadata.decimals || 18)).toFixed(4)
-      }
+      const balance = getTokenBalanceFromBytes(
+        token.tokenBalance,
+        metadata.decimals || 18
+      )
 
       addressTokens.push({
         address: token.contractAddress as Address,
@@ -125,8 +121,35 @@ export default function TokenContextProvider(props: TokenContextProviderProps) {
       }
     }
 
-    setAllAddressTokens(addressTokens)
     return addressTokens
+  }
+
+  async function getAddressTokenBalances(
+    address: Address,
+    alchemyInstance: Alchemy
+  ): Promise<TokenBalancesResponseErc20> {
+    return await alchemyInstance.core.getTokenBalances(address)
+  }
+
+  function getAlchemyInstance(network?: Network): Alchemy {
+    return new Alchemy({
+      apiKey: process.env.NEXT_PUBLIC_ALCHEMY_API_KEY,
+      network: network ? network : Network.ETH_SEPOLIA,
+    })
+  }
+
+  async function getTokenMetadata(
+    tokenAddress: Address,
+    alchemyInstance: Alchemy
+  ) {
+    return await alchemyInstance.core.getTokenMetadata(tokenAddress)
+  }
+
+  async function getEthBalance(address: Address, alchemyInstance: Alchemy) {
+    const ethBalance = await (
+      await alchemyInstance.core.getBalance(address)
+    ).toString()
+    return (+ethBalance / Math.pow(10, 18)).toFixed(4)
   }
 
   function getTokenByAddress(tokenAddress: Address): Token | null {
@@ -136,8 +159,11 @@ export default function TokenContextProvider(props: TokenContextProviderProps) {
     const token = supportedTokens.find(
       (token) => token.address.toLowerCase() === tokenAddress.toLowerCase()
     )
-
     return token || null
+  }
+
+  function getTokenBalanceFromBytes(balanceInBytes: string, decimals: number) {
+    return (+balanceInBytes / Math.pow(10, decimals || 18)).toFixed(4)
   }
 
   async function getERC20TokenBalance(
@@ -152,26 +178,23 @@ export default function TokenContextProvider(props: TokenContextProviderProps) {
   }
 
   async function getERC20TokenPrice(token: Token): Promise<number> {
-    return fetch(
-      `https://api.mobula.io/api/1/market/data?asset=${token.name.toUpperCase()}`,
-      {
-        method: "GET",
-        headers: {
-          Authorization: process.env.NEXT_PUBLIC_MOBULA_API_KEY ?? "",
-        },
-      }
-    )
+    const tokenName = token.name.split(" ")[0].toUpperCase()
+    return fetch(`https://api.mobula.io/api/1/market/data?asset=${tokenName}`, {
+      method: "GET",
+      headers: {
+        Authorization: process.env.NEXT_PUBLIC_MOBULA_API_KEY ?? "",
+      },
+    })
       .then((response) => response.json())
       .then(({ data }) => data?.price)
       .catch((err) => console.error(err))
   }
 
   const context = {
-    allSupportedTokens,
     getAllAddressTokens,
     getTokenByAddress,
     getERC20TokenBalance,
-    allAddressTokens,
+    getAllSupportedTokens,
   }
 
   return (

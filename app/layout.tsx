@@ -18,21 +18,26 @@ import { alchemyProvider } from "@wagmi/core/providers/alchemy"
 // React
 import { ReactNode } from "react"
 import Head from "next/head"
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 
 // Font-awesome
 import "@fortawesome/fontawesome-svg-core/styles.css"
 import { config } from "@fortawesome/fontawesome-svg-core"
 config.autoAddCss = false
 
-// Shader gradient
+// Services
+import PortalContextProvider from "@/services/PortalContext"
+import TokenContextProvider from "@/services/TokenContext"
+import TransactionContextProvider from "@/services/TransactionsContext"
+import ChainContextProvider from "@/services/ChainContext"
+
+// Components
 import ShaderGradientBackground from "../components/ui/shader-gradient"
 import LoadingScreen from "@/components/ui/loading-screen/loading-screen"
 import { Toaster } from "@/components/ui/toaster"
 import { Layout } from "@/components/layout/layout"
-import PortalContextProvider from "@/services/PortalContext"
-import TokenContextProvider from "@/services/TokenContext"
-import TransactionContextProvider from "@/services/TransactionsContext"
-import ChainContextProvider, { ChainContext } from "@/services/ChainContext"
+
+const queryClient = new QueryClient()
 
 const { chains, publicClient } = configureChains(
   [sepolia],
@@ -77,15 +82,17 @@ export default function RootLayout({ children }: { children: ReactNode }) {
               overlayBlur: "small",
             })}
           >
-            <ChainContextProvider>
-              <PortalContextProvider>
-                <TokenContextProvider>
-                  <TransactionContextProvider>
-                    <Layout>{children}</Layout>
-                  </TransactionContextProvider>
-                </TokenContextProvider>
-              </PortalContextProvider>
-            </ChainContextProvider>
+            <QueryClientProvider client={queryClient}>
+              <ChainContextProvider>
+                <PortalContextProvider>
+                  <TokenContextProvider>
+                    <TransactionContextProvider>
+                      <Layout>{children}</Layout>
+                    </TransactionContextProvider>
+                  </TokenContextProvider>
+                </PortalContextProvider>
+              </ChainContextProvider>
+            </QueryClientProvider>
           </RainbowKitProvider>
         </WagmiConfig>
         <ShaderGradientBackground />

@@ -33,12 +33,12 @@ import { useContext, useEffect, useState } from "react"
 import { Token } from "@/types/Token"
 
 // Services / Utils
-import { PayFeesIn, TokenContext } from "@/services/TokenContext"
+import { ChainSupportedTokens, PayFeesIn } from "@/services/TokenContext"
 import { PortalContext } from "@/services/PortalContext"
 import { registeredChains } from "@/services/data/chains"
-import { ZERO_ADDRESS } from "@/lib/utils"
 import { Address } from "viem"
 import Image from "next/image"
+import { getNetwork } from "@wagmi/core"
 
 interface CreateTransactionFormProps {
   createTransaction: (
@@ -50,9 +50,9 @@ interface CreateTransactionFormProps {
     executesOnRequirementMet: boolean,
     payFeesIn: string
   ) => void
+  allSupportedTokens: ChainSupportedTokens[] | undefined
   isLoading: boolean
   setIsSubmitting: (isSubmitting: boolean) => void
-  portalSigAddress: Address
 }
 
 const formSchema = z.object({
@@ -70,24 +70,20 @@ const formSchema = z.object({
 
 export default function CreateTransactionForm({
   createTransaction,
-  isLoading,
-  portalSigAddress,
+  allSupportedTokens,
   setIsSubmitting,
+  isLoading,
 }: CreateTransactionFormProps) {
-  // Context
-  const { allSupportedTokens, getTokenByAddress, getERC20TokenBalance } =
-    useContext(TokenContext)
-  const { isExternalChain, getPortalETHBalance } = useContext(PortalContext)
+  const { chain } = getNetwork()
+  const { reset } = useForm()
+  const { isExternalChain } = useContext(PortalContext)
 
-  // State
   const [selectedChain, setSelectedChain] = useState<string>("")
   const [selectedChainSupportedTokens, setSelectedChainSupportedTokens] =
     useState<Token[]>([])
   const [selectedToken, setSelectedToken] = useState<string>("")
   const [selectedTokenBalance, setSelectedTokenBalance] = useState<string>("")
 
-  // React Hook Forms
-  const { reset } = useForm()
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -103,46 +99,55 @@ export default function CreateTransactionForm({
 
   useEffect(() => {
     resetTokenField()
-    setSelectedChainSupportedTokens(getChainSupportedTokens(selectedChain))
+    onChainChange()
   }, [selectedChain])
 
   useEffect(() => {
-    if (selectedToken) {
-      if (selectedToken === ZERO_ADDRESS) {
-        updateDisplayedETHBalance()
-        return
-      }
-      const token = getTokenByAddress(selectedToken as Address)
-      if (token) {
-        updateDisplayedERC20TokenBalance(token)
-      }
-
-      async function updateDisplayedETHBalance() {
-        const balance = await getPortalETHBalance(portalSigAddress)
-        setSelectedTokenBalance(balance)
-      }
-    }
+    onTokenChange()
   }, [selectedToken])
 
-  function getChainSupportedTokens(chainSelector: string): Token[] {
-    const chain = allSupportedTokens.find(
-      (chain) => chain.chainSelector === chainSelector
-    )
-    if (chain) {
-      return chain.supportedTokens
-    }
-    return []
+  function onChainChange() {
+    const chainSupportedTokens = allSupportedTokens?.find(
+      (chain) => chain.chainSelector === selectedChain
+    )?.supportedTokens
+    setSelectedChainSupportedTokens(chainSupportedTokens || [])
   }
 
-  async function updateDisplayedERC20TokenBalance(token: Token) {
-    let balance = Number(
-      (await getERC20TokenBalance(portalSigAddress, token))?.value || 0
+  function resetTokenField(): void {
+    reset({ token: "" })
+    setSelectedToken("")
+    setSelectedTokenBalance("")
+  }
+
+  function onTokenChange(): void {
+    const token = getTokenByAddress(selectedToken as Address)
+    setSelectedTokenBalance(
+      token?.balance ? Number(token.balance).toFixed(2) : "0"
     )
-    if (balance) {
-      balance = balance / Math.pow(10, token.decimals || 18)
+  }
+
+  function getTokenByAddress(address: Address): Token | null {
+    const currentChainTokens = allSupportedTokens?.find(
+      (registeredChain) => +registeredChain.chainId === chain?.id
+    )?.supportedTokens
+
+    if (currentChainTokens) {
+      const token = currentChainTokens.find(
+        (token) => token.address.toUpperCase() === address.toUpperCase()
+      )
+      if (token) {
+        return token
+      }
     }
 
-    setSelectedTokenBalance(balance.toFixed(2))
+    return (
+      allSupportedTokens
+        ?.map((chain) => chain.supportedTokens)
+        .flat()
+        .find(
+          (token) => token.address.toUpperCase() === address.toUpperCase()
+        ) || null
+    )
   }
 
   function onSubmit(values: z.infer<typeof formSchema>) {
@@ -166,12 +171,6 @@ export default function CreateTransactionForm({
       executesOnRequirementMet,
       payFeesIn.toString()
     )
-  }
-
-  function resetTokenField(): void {
-    reset({ token: "" })
-    setSelectedToken("")
-    setSelectedTokenBalance("")
   }
 
   return (
@@ -245,7 +244,7 @@ export default function CreateTransactionForm({
             />
           )}
           {/* TOKEN TO SEND */}
-          {!!form.getValues().destinationChainSelector && !isLoading && (
+          {!!form.getValues().destinationChainSelector && (
             <FormField
               control={form.control}
               name="token"
@@ -278,7 +277,8 @@ export default function CreateTransactionForm({
                   <FormDescription>
                     {selectedToken
                       ? `Balance: ${selectedTokenBalance} ${
-                          getTokenByAddress(selectedToken as Address)?.symbol
+                          getTokenByAddress(selectedToken as Address)?.symbol ||
+                          ""
                         }`
                       : ""}
                   </FormDescription>

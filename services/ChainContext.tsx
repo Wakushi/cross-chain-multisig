@@ -69,13 +69,11 @@ export default function ChainContextProvider(props: ChainContextProviderProps) {
 
   function getChainBySelector(chainSelector: string): Chain | null {
     if (chainSelector === "0" && chain) {
-      return {
-        name: chain.name,
-        chainSelector: "0",
-        chainId: chain.id.toString(),
-        supportedTokens: [],
-        icon: "",
-      }
+      return (
+        registeredChains.find(
+          (registeredChain) => +registeredChain.chainId === chain.id
+        ) || null
+      )
     }
     return (
       registeredChains.find((chain) => chain.chainSelector === chainSelector) ||

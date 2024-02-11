@@ -9,6 +9,7 @@ import baseIcon from "@/assets/icons/base.svg"
 import arbitrumIcon from "@/assets/icons/arbitrum.svg"
 import usdc from "@/assets/icons/USDC.svg"
 import weth from "@/assets/icons/weth.webp"
+import link from "@/assets/icons/link.png"
 
 export interface Chain {
   name: string
@@ -23,6 +24,7 @@ export const tokenLogos = {
   USDC: usdc.src,
   ETH: ethIcon.src,
   WETH: weth.src,
+  LINK: link.src,
 }
 
 export const ethToken: Token = {

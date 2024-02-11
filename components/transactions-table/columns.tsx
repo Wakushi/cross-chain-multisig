@@ -78,7 +78,7 @@ export const columns: ColumnDef<Transaction>[] = [
       )
 
       return (
-        <div className="font-light flex items-center gap-1">
+        <div className="font-light text-left flex items-center gap-1">
           <Image
             src={chainMetadata!.icon}
             alt={`${chainMetadata?.name} logo`}
@@ -98,7 +98,7 @@ export const columns: ColumnDef<Transaction>[] = [
           variant="ghost"
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
         >
-          Amount
+          Token Amount
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       )
@@ -111,8 +111,19 @@ export const columns: ColumnDef<Transaction>[] = [
         tokenMetadata?.decimals ?? 18
       )
       return (
-        <div className="text-nowrap">
-          {amount} {tokenMetadata?.symbol}
+        <div className="text-nowrap text-center">
+          <span>{amount}</span>{" "}
+          <span className="text-xs">{tokenMetadata?.symbol}</span>{" "}
+          <span>
+            (
+            <span className="brand">
+              $
+              {tokenMetadata?.price
+                ? (tokenMetadata.price * +amount).toFixed(2)
+                : 0}
+            </span>
+            )
+          </span>
         </div>
       )
     },

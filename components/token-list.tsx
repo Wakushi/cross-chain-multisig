@@ -10,16 +10,16 @@ interface TokenListProps {
 export default function TokenList({ tokens }: TokenListProps) {
   return (
     <>
-      <div className="flex items-center p-4">
-        <h2 className="text-xl font-light flex-1">Tokens</h2>
-        <h2 className="text-xl font-light flex-1">Price</h2>
-        <h2 className="text-xl font-light flex-1">Value</h2>
+      <div className="flex items-center mb-2">
+        <h2 className="text-lg font-light flex-1">Tokens</h2>
+        <h2 className="text-lg font-light flex-1">Price</h2>
+        <h2 className="text-lg font-light flex-1">Value in USD</h2>
       </div>
       <div className="flex flex-col gap-4">
         {tokens.map((token: Token) => (
           <Card
             key={token.address}
-            className="border-none bg-slate-900 p-4 flex items-center"
+            className="border-none bg-slate-900 p-4 flex items-center shadow-xl"
           >
             <div className="flex gap-4 items-center flex-1">
               <div className="bg-slate-800 w-10 h-10 p-2 rounded">

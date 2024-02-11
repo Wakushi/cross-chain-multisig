@@ -2,12 +2,16 @@
 // Components
 import { Card, CardContent } from "@/components/ui/card"
 import MenuLink from "@/components/portal-details-page/menu-link"
-import LoaderHive from "@/components/ui/loader-hive/loader-hive"
+import Copy from "@/components/ui/copy/copy"
+
 // Services / Utils
 import { PortalContext } from "@/services/PortalContext"
 import { usePathname } from "next/navigation"
-import { ReactNode, useContext, useEffect, useState } from "react"
+import { getShortenedAddress } from "@/lib/utils"
+import { ReactNode, useContext, useEffect } from "react"
+import { useQuery } from "@tanstack/react-query"
 import { Address } from "viem"
+
 // Assets
 import {
   faChartLine,
@@ -17,6 +21,8 @@ import {
   faPiggyBank,
   faRightLeft,
 } from "@fortawesome/free-solid-svg-icons"
+import { TokenContext } from "@/services/TokenContext"
+import LoaderSmall from "@/components/ui/loader-small/loader-small"
 
 interface PortalPageLayoutProps {
   children: ReactNode
@@ -29,16 +35,24 @@ export default function PortalPageLayout({
 }: PortalPageLayoutProps) {
   const pathname = usePathname()
   const { setCurrentPortalByAddress } = useContext(PortalContext)
-  const [isLoading, setIsLoading] = useState<boolean>(false)
+  const { getAddressTotalBalanceInUSD } = useContext(TokenContext)
 
   useEffect(() => {
-    async function fetchPortal() {
-      setIsLoading(true)
-      await setCurrentPortalByAddress(params.portalId)
-      setIsLoading(false)
+    setCurrentPortalByAddress(params.portalId)
+  }, [params.portalId])
+
+  const { data: balance, isLoading } = useQuery<number, Error>(
+    ["balance", params.portalId],
+    () => {
+      if (!params.portalId) {
+        throw new Error("Portal address is undefined")
+      }
+      return getAddressTotalBalanceInUSD(params.portalId)
+    },
+    {
+      enabled: !!params.portalId,
     }
-    fetchPortal()
-  }, [])
+  )
 
   function isActiveEndpoint(seekedPath: string): boolean {
     const path = pathname.split("/")
@@ -46,8 +60,21 @@ export default function PortalPageLayout({
     return path.includes(seekedPath)
   }
 
-  if (isLoading) {
-    return <LoaderHive />
+  function PortalBalance() {
+    if (isLoading) {
+      return (
+        <div className="scale-75">
+          <LoaderSmall />
+        </div>
+      )
+    }
+    if (balance !== undefined) {
+      return (
+        <span className="font-light text-3xl">
+          {balance.toFixed(2) || "0.00"}
+        </span>
+      )
+    }
   }
 
   return (
@@ -58,10 +85,15 @@ export default function PortalPageLayout({
           {/* BALANCE */}
           <div className="flex flex-col gap-2 p-4 pt-20">
             <h2 className="text-xs font-light">BALANCE</h2>
-            <p className="text-3xl">
-              <span className="brand">$</span>{" "}
-              <span className="font-light">0.00</span>
-            </p>
+            <div className="flex items-center gap-5">
+              <span className="brand text-3xl">$</span> <PortalBalance />
+            </div>
+            <div className="flex items-center">
+              <p className="font-extralight">
+                {getShortenedAddress(params.portalId)}
+              </p>
+              <Copy contentToCopy={params.portalId} />
+            </div>
           </div>
           {/* NAVIGATION */}
           <div className="flex flex-col">

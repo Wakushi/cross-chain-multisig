@@ -16,6 +16,7 @@ import { Token } from "@/types/Token"
 // React
 import { useQuery } from "@tanstack/react-query"
 import { useContext } from "react"
+import TokenDoughnutChart from "@/components/doughnut-chart"
 
 export default function DashboardPage() {
   const { getAllAddressTokens } = useContext(TokenContext)
@@ -55,8 +56,9 @@ export default function DashboardPage() {
   return (
     <div className="p-4 flex flex-col gap-4">
       <div className="flex items-center gap-4">
-        <Card className="flex-1 min-h-[200px]"></Card>
-        <Card className="flex-1 min-h-[200px]"></Card>
+        <Card className=" h-[235px]">
+          <TokenDoughnutChart tokens={tokens} />
+        </Card>
       </div>
       <Card className="flex-1 min-h-[500px] p-2">
         <Tabs defaultValue="tokens" className="w-full">
@@ -72,7 +74,9 @@ export default function DashboardPage() {
             <TokenList tokens={tokens} />
           </TabsContent>
           <TabsContent value="collectibles" className="p-4">
-            Collectibles
+            <div className="flex items-center justify-center">
+              <p>No collectible found.</p>
+            </div>
           </TabsContent>
         </Tabs>
       </Card>

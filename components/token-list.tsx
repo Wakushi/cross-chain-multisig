@@ -12,7 +12,7 @@ export default function TokenList({ tokens }: TokenListProps) {
     <>
       <div className="flex items-center mb-2">
         <h2 className="text-lg font-light flex-1">Tokens</h2>
-        <h2 className="text-lg font-light flex-1">Price</h2>
+        <h2 className="text-lg font-light flex-1">Unit price (USD)</h2>
         <h2 className="text-lg font-light flex-1">Value in USD</h2>
       </div>
       <div className="flex flex-col gap-4">

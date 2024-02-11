@@ -75,7 +75,7 @@ export function DataTable<TData, TValue>({
   return (
     <>
       <div className="flex items-center justify-between p-2">
-        <div className="flex gap-2">
+        <div className="flex items-center w-full gap-2">
           <Input
             placeholder="Destinator : 0x00..."
             value={

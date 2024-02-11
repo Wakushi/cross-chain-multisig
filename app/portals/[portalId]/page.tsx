@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import LoaderHive from "@/components/ui/loader-hive/loader-hive"
 import TokenList from "@/components/token-list"
+import TokenDoughnutChart from "@/components/doughnut-chart"
 
 // Services
 import { PortalContext } from "@/services/PortalContext"
@@ -16,7 +17,6 @@ import { Token } from "@/types/Token"
 // React
 import { useQuery } from "@tanstack/react-query"
 import { useContext } from "react"
-import TokenDoughnutChart from "@/components/doughnut-chart"
 
 export default function DashboardPage() {
   const { getAllAddressTokens } = useContext(TokenContext)
@@ -34,6 +34,13 @@ export default function DashboardPage() {
       enabled: !!currentPortal?.address,
     }
   )
+
+  function hasToken(): boolean {
+    const hasToken = tokens?.find(
+      (token) => token.balance && +token.balance > 0
+    )
+    return !!hasToken
+  }
 
   if (isLoading) {
     return (
@@ -55,11 +62,13 @@ export default function DashboardPage() {
 
   return (
     <div className="p-4 flex flex-col gap-4">
-      <div className="flex items-center gap-4">
-        <Card className=" h-[235px]">
-          <TokenDoughnutChart tokens={tokens} />
-        </Card>
-      </div>
+      {hasToken() && (
+        <div className="flex items-center gap-4">
+          <Card className=" h-[235px]">
+            <TokenDoughnutChart tokens={tokens} />
+          </Card>
+        </div>
+      )}
       <Card className="flex-1 min-h-[500px] p-2">
         <Tabs defaultValue="tokens" className="w-full">
           <TabsList className="w-full">

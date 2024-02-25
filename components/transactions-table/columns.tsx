@@ -328,9 +328,9 @@ export const columns: ColumnDef<Transaction>[] = [
   {
     id: "actions",
     cell: ({ row }) => {
-      const transaction = row.original
       const { toast } = useToast()
       const queryClient = useQueryClient()
+      const transaction = row.original
 
       const { getPortalTransactions, getExplorerUrl } =
         useContext(TransactionContext)

@@ -132,7 +132,7 @@ export default function PortalPageLayout({
             >
               Swap
             </MenuLink>
-            <MenuLink // -> Chain whitelisting feature
+            <MenuLink
               href={`/portals/${params.portalId}/settings`}
               isActive={isActiveEndpoint("settings")}
               icon={faGear}
@@ -141,7 +141,7 @@ export default function PortalPageLayout({
             </MenuLink>
           </div>
         </div>
-        <CardContent className="p-6 pt-20 w-full min-h-screen border-white">
+        <CardContent className="p-6 pt-20 w-full overflow-scroll min-h-screen">
           <Card className="w-full h-fit">{children} </Card>
         </CardContent>
       </Card>

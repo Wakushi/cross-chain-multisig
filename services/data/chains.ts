@@ -100,6 +100,7 @@ export const registeredChains: Chain[] = [
     name: "Polygon Mumbai",
     chainId: "80001",
     chainSelector: "12532609583862916517",
+    explorerUrl: "https://mumbai.polygonscan.com/tx/",
     supportedTokens: [
       {
         address: "0x1b791d05E437C78039424749243F5A79E747525e",

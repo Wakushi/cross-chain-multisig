@@ -36,7 +36,7 @@ export default function PortalsPage() {
       <div className="min-h-screen flex items-center justify-center fade-in">
         <div className="flex flex-col gap-5 justify-center items-center">
           <p className="text-3xl">No portal found</p>
-          <Link href="/create">
+          <Link href="create">
             <Button variant="outline">Create a portal</Button>
           </Link>
         </div>

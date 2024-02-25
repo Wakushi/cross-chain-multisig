@@ -9,14 +9,10 @@ import {
   getNetwork,
 } from "@wagmi/core"
 import { Chain, registeredChains } from "@/services/data/chains"
+import { PORTALSIG_FACTORIES, PortalSigFactory } from "@/constants/constants"
 
 interface ChainContextProviderProps {
   children: ReactNode
-}
-
-interface ChainContextProps {
-  callContract: (params: ContractCallParams) => Promise<any>
-  getChainBySelector: (chainSelector: string) => Chain | null
 }
 
 export enum ContractCallType {
@@ -32,9 +28,16 @@ export interface ContractCallParams {
   type: ContractCallType
 }
 
+interface ChainContextProps {
+  callContract: (params: ContractCallParams) => Promise<any>
+  getChainBySelector: (chainSelector: string) => Chain | null
+  getActiveChainFactoryData: () => PortalSigFactory | null
+}
+
 const ChainContext = createContext<ChainContextProps>({
   callContract: async () => {},
   getChainBySelector: () => null,
+  getActiveChainFactoryData: () => null,
 })
 
 export default function ChainContextProvider(props: ChainContextProviderProps) {
@@ -81,9 +84,18 @@ export default function ChainContextProvider(props: ChainContextProviderProps) {
     )
   }
 
+  function getActiveChainFactoryData(): PortalSigFactory | null {
+    if (!chain) return null
+    const factory = PORTALSIG_FACTORIES.find(
+      (factory) => factory.chainId === chain.id
+    )
+    return factory || null
+  }
+
   const context = {
     callContract,
     getChainBySelector,
+    getActiveChainFactoryData,
   }
 
   return (

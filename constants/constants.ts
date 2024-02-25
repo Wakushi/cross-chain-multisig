@@ -1,10 +1,26 @@
-export const PORTALSIG_FACTORY_CONTRACT_ADDRESS =
-  "0xbbf5C4f32928D0903F15F7141A54324A0237E9e0"
+import { Address } from "viem"
 
-export const SEPOLIA_CCIP_ROUTER_CONTRACT_ADDRESS =
-  "0x0BF3dE8c5D3e8A2B34D2BEeB17ABfCeBaf363A59"
-export const SEPOLIA_LINK_CONTRACT_ADDRESS =
-  "0x779877A7B0D9E8603169DdbD7836e478b4624789"
+export interface PortalSigFactory {
+  chainId: number
+  contractAddress: Address
+  ccipRouterAddress: Address
+  linkAddress: Address
+}
+
+export const PORTALSIG_FACTORIES: PortalSigFactory[] = [
+  {
+    chainId: 11155111,
+    contractAddress: "0xbbf5C4f32928D0903F15F7141A54324A0237E9e0",
+    ccipRouterAddress: "0x0BF3dE8c5D3e8A2B34D2BEeB17ABfCeBaf363A59",
+    linkAddress: "0x779877A7B0D9E8603169DdbD7836e478b4624789",
+  },
+  {
+    chainId: 80001,
+    contractAddress: "0x74c32E814e2Ce6d0E98c3eE09B9dE3E7109104A1",
+    ccipRouterAddress: "0x1035CabC275068e0F4b745A29CEDf38E13aF41b1",
+    linkAddress: "0x326C977E6efc84E512bB9C30f76E30c160eD06FB",
+  },
+]
 
 export const CCIP_EXPLORER_URL = "https://ccip.chain.link/tx/"
 

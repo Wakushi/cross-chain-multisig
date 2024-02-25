@@ -1,5 +1,5 @@
 // React
-import { createContext, ReactNode, useState } from "react"
+import { createContext, ReactNode, useContext, useState } from "react"
 // Types
 import { Portal } from "@/types/Portal"
 // Wagmi / Viem
@@ -10,10 +10,10 @@ import { useAccount } from "wagmi"
 // Utils
 import {
   PORTALSIG_FACTORY_CONTRACT_ABI,
-  PORTALSIG_FACTORY_CONTRACT_ADDRESS,
   PORTALSIG_WALLET_CONTRACT_ABI,
 } from "@/constants/constants"
 import { Chain, registeredChains } from "./data/chains"
+import { ChainContext } from "./ChainContext"
 
 interface PortalContextProviderProps {
   children: ReactNode
@@ -41,6 +41,7 @@ export default function PortalContextProvider(
 ) {
   const { address } = useAccount()
   const { chain } = getNetwork()
+  const { getActiveChainFactoryData } = useContext(ChainContext)
   const [currentPortal, setCurrentPortal] = useState<Portal | null>(null)
 
   async function getPortal(portalAddress: Address): Promise<Portal> {
@@ -77,8 +78,10 @@ export default function PortalContextProvider(
   }
 
   async function getPortalAddresses(): Promise<Address[]> {
+    const portalSigFactoryData = getActiveChainFactoryData()
+    if (!portalSigFactoryData) return []
     const portalsAddresses: any = await readContract({
-      address: PORTALSIG_FACTORY_CONTRACT_ADDRESS,
+      address: portalSigFactoryData.contractAddress,
       abi: PORTALSIG_FACTORY_CONTRACT_ABI,
       functionName: "getWalletsByOwner",
       args: [address],

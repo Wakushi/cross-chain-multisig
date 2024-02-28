@@ -33,12 +33,11 @@ import { useContext, useEffect, useState } from "react"
 import { Token } from "@/types/Token"
 
 // Services / Utils
-import { ChainSupportedTokens, PayFeesIn } from "@/services/TokenContext"
+import { PayFeesIn, TokenContext } from "@/services/TokenContext"
 import { PortalContext } from "@/services/PortalContext"
-import { registeredChains } from "@/services/data/chains"
+import { DestinationChainsData, registeredChains } from "@/services/data/chains"
 import { Address } from "viem"
 import Image from "next/image"
-import { getNetwork } from "@wagmi/core"
 
 interface CreateTransactionFormProps {
   createTransaction: (
@@ -50,7 +49,7 @@ interface CreateTransactionFormProps {
     executesOnRequirementMet: boolean,
     payFeesIn: string
   ) => void
-  allSupportedTokens: ChainSupportedTokens[] | undefined
+  allSupportedTokens: DestinationChainsData[] | undefined
   isLoading: boolean
   setIsSubmitting: (isSubmitting: boolean) => void
 }
@@ -74,9 +73,9 @@ export default function CreateTransactionForm({
   setIsSubmitting,
   isLoading,
 }: CreateTransactionFormProps) {
-  const { chain } = getNetwork()
   const { reset } = useForm()
   const { isExternalChain } = useContext(PortalContext)
+  const { getTokenByAddress } = useContext(TokenContext)
 
   const [selectedChain, setSelectedChain] = useState<string>("")
   const [selectedChainSupportedTokens, setSelectedChainSupportedTokens] =
@@ -108,8 +107,8 @@ export default function CreateTransactionForm({
 
   function onChainChange() {
     const chainSupportedTokens = allSupportedTokens?.find(
-      (chain) => chain.chainSelector === selectedChain
-    )?.supportedTokens
+      (chain) => chain.destinationChainSelector === selectedChain
+    )?.tokens
     setSelectedChainSupportedTokens(chainSupportedTokens || [])
   }
 
@@ -123,30 +122,6 @@ export default function CreateTransactionForm({
     const token = getTokenByAddress(selectedToken as Address)
     setSelectedTokenBalance(
       token?.balance ? Number(token.balance).toFixed(2) : "0"
-    )
-  }
-
-  function getTokenByAddress(address: Address): Token | null {
-    const currentChainTokens = allSupportedTokens?.find(
-      (registeredChain) => +registeredChain.chainId === chain?.id
-    )?.supportedTokens
-
-    if (currentChainTokens) {
-      const token = currentChainTokens.find(
-        (token) => token.address.toUpperCase() === address.toUpperCase()
-      )
-      if (token) {
-        return token
-      }
-    }
-
-    return (
-      allSupportedTokens
-        ?.map((chain) => chain.supportedTokens)
-        .flat()
-        .find(
-          (token) => token.address.toUpperCase() === address.toUpperCase()
-        ) || null
     )
   }
 

@@ -10,14 +10,27 @@ import arbitrumIcon from "@/assets/icons/arbitrum.svg"
 import usdc from "@/assets/icons/USDC.svg"
 import weth from "@/assets/icons/weth.webp"
 import link from "@/assets/icons/link.png"
+import { Address } from "viem"
+import { Network } from "alchemy-sdk"
 
 export interface Chain {
   name: string
+  alchemyNetwork: Network
   chainId: string
   chainSelector: string
-  supportedTokens: Token[]
+  destinationChains: DestinationChainsData[]
+  portalFactoryAddress: Address
+  ccipRouterAddress: Address
+  linkTokenAddress: Address
+  portalGateAddress: Address
   explorerUrl?: string
   icon: string
+}
+
+export interface DestinationChainsData {
+  destinationChain: string
+  destinationChainSelector: string
+  tokens: Token[]
 }
 
 export const tokenLogos = {
@@ -27,270 +40,219 @@ export const tokenLogos = {
   LINK: link.src,
 }
 
-export const ethToken: Token = {
-  address: ZERO_ADDRESS,
-  name: "Ethereum",
-  symbol: "ETH",
-  decimals: 18,
-  logo: ethIcon.src,
-}
-
 export const registeredChains: Chain[] = [
   {
     name: "Ethereum Sepolia",
+    alchemyNetwork: Network.ETH_SEPOLIA,
     chainId: "11155111",
     chainSelector: "16015286601757825753",
     explorerUrl: "https://sepolia.etherscan.io/tx/",
-    supportedTokens: [
-      ethToken,
+    portalFactoryAddress: "0xe7fd357e041CC34527c49A0fdFa05aEfBB3015F2",
+    ccipRouterAddress: "0x0BF3dE8c5D3e8A2B34D2BEeB17ABfCeBaf363A59",
+    linkTokenAddress: "0x779877A7B0D9E8603169DdbD7836e478b4624789",
+    portalGateAddress: "0x223a49b390fbdf90f645D297522A7fcfC71233F8",
+    destinationChains: [
       {
-        address: "0x779877a7b0d9e8603169ddbd7836e478b4624789",
-        name: "ChainLink Token",
-        symbol: "LINK",
-        decimals: 18,
+        destinationChain: "Ethereum Sepolia",
+        destinationChainSelector: "16015286601757825753",
+        tokens: [
+          {
+            address: ZERO_ADDRESS,
+            name: "Ethereum",
+            symbol: "ETH",
+            decimals: 18,
+            logo: ethIcon.src,
+          },
+        ],
       },
       {
-        address: "0xFd57b4ddBf88a4e07fF4e34C487b99af2Fe82a05",
-        name: "CCIP-BnM",
-        symbol: "CCIP-BnM",
-        decimals: 18,
+        destinationChain: "Polygon Mumbai",
+        destinationChainSelector: "12532609583862916517",
+        tokens: [
+          {
+            address: "0xFd57b4ddBf88a4e07fF4e34C487b99af2Fe82a05",
+            name: "CCIP-BnM",
+            symbol: "CCIP-BnM",
+            decimals: 18,
+          },
+          {
+            address: "0x466D489b6d36E7E3b824ef491C225F5830E81cC1",
+            name: "CCIP-LnM",
+            symbol: "CCIP-LnM",
+            decimals: 18,
+          },
+          {
+            address: "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238",
+            name: "USDC",
+            symbol: "USDC",
+            decimals: 6,
+          },
+        ],
       },
     ],
     icon: ethIcon.src,
   },
   {
-    name: "Optimism Goerli",
-    chainId: "420",
-    chainSelector: "2664363617261496610",
-    supportedTokens: [
-      {
-        address: "0x1b791d05E437C78039424749243F5A79E747525e",
-        decimals: 18,
-        name: "Synthetic USD Token v3",
-        symbol: "snxUSD",
-      },
-      {
-        address: "0xFd57b4ddBf88a4e07fF4e34C487b99af2Fe82a05",
-        decimals: 18,
-        name: "CCIP-BnM",
-        symbol: "CCIP-BnM",
-      },
-      {
-        address: "0xB3c3977B0aC329A9035889929482a4c635B50573",
-        decimals: 18,
-        name: "CCIP-TEST-AMKT",
-        symbol: "CCIP-TEST-AMKT",
-      },
-      {
-        address: "0x94095e6514411C65E7809761F21eF0febe69A977",
-        decimals: 8,
-        name: "CACHE Gold",
-        symbol: "CGT",
-      },
-      {
-        address: "0x466D489b6d36E7E3b824ef491C225F5830E81cC1",
-        decimals: 18,
-        name: "CCIP-LnM",
-        symbol: "CCIP-LnM",
-      },
-    ],
-    icon: optimismIcon.src,
-  },
-  {
     name: "Polygon Mumbai",
+    alchemyNetwork: Network.MATIC_MUMBAI,
     chainId: "80001",
     chainSelector: "12532609583862916517",
     explorerUrl: "https://mumbai.polygonscan.com/tx/",
-    supportedTokens: [
+    portalFactoryAddress: "0x960F9bFcCeC2ca1271482E95512F456D3d9F9890",
+    ccipRouterAddress: "0x1035CabC275068e0F4b745A29CEDf38E13aF41b1",
+    linkTokenAddress: "0x326C977E6efc84E512bB9C30f76E30c160eD06FB",
+    portalGateAddress: "0x60f7b9f6f83b38e98CCAB2b594F4bABd830307Ae",
+    destinationChains: [
       {
-        address: "0x1b791d05E437C78039424749243F5A79E747525e",
-        name: "Synthetic USD Token v3",
-        symbol: "snxUSD",
-        decimals: 18,
+        destinationChain: "Polygon Mumbai",
+        destinationChainSelector: "12532609583862916517",
+        tokens: [
+          {
+            address: ZERO_ADDRESS,
+            name: "Matic",
+            symbol: "MATIC",
+            decimals: 18,
+            logo: polygonIcon.src,
+          },
+        ],
       },
       {
-        address: "0xFd57b4ddBf88a4e07fF4e34C487b99af2Fe82a05",
-        name: "CCIP-BnM",
-        symbol: "CCIP-BnM",
-        decimals: 18,
-      },
-      {
-        address: "0x94095e6514411C65E7809761F21eF0febe69A977",
-        name: "CACHE Gold",
-        symbol: "CGT",
-        decimals: 8,
-      },
-      {
-        address: "0x466D489b6d36E7E3b824ef491C225F5830E81cC1",
-        name: "CCIP-LnM",
-        symbol: "CCIP-LnM",
-        decimals: 18,
-      },
-      {
-        address: "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238",
-        name: "USDC",
-        symbol: "USDC",
-        decimals: 6,
+        destinationChain: "Ethereum Sepolia",
+        destinationChainSelector: "16015286601757825753",
+        tokens: [
+          {
+            address: "0xf1E3A5842EeEF51F2967b3F05D45DD4f4205FF40",
+            name: "CCIP-BnM",
+            symbol: "CCIP-BnM",
+            decimals: 18,
+          },
+          {
+            address: "0xc1c76a8c5bFDE1Be034bbcD930c668726E7C1987",
+            name: "CCIP-LnM",
+            symbol: "CCIP-LnM",
+            decimals: 18,
+          },
+          {
+            address: "0x9999f7Fea5938fD3b1E26A12c3f2fb024e194f97",
+            name: "USDC",
+            symbol: "USDC",
+            decimals: 6,
+          },
+        ],
       },
     ],
     icon: polygonIcon.src,
   },
-  {
-    name: "Avalanche Fuji",
-    chainId: "43113",
-    chainSelector: "14767482510784806043",
-    supportedTokens: [
-      {
-        address: "0x94095e6514411C65E7809761F21eF0febe69A977",
-        name: "CACHE Gold",
-        symbol: "CGT",
-        decimals: 8,
-      },
-      {
-        address: "0x466D489b6d36E7E3b824ef491C225F5830E81cC1",
-        name: "CCIP-LnM",
-        symbol: "CCIP-LnM",
-        decimals: 18,
-      },
-      {
-        address: "0xB3c3977B0aC329A9035889929482a4c635B50573",
-        name: "CCIP-TEST-AMKT",
-        symbol: "CCIP-TEST-AMKT",
-        decimals: 18,
-      },
-      {
-        address: "0x784c400D6fF625051d2f587dC0276E3A1ffD9cda",
-        name: "BankToken",
-        symbol: "BANK",
-        decimals: 18,
-      },
-      {
-        address: "0x2Ca7afAC86D0b28d9f7e512b969cEaD9E3048303",
-        name: "Australian Dollar Digital Coin",
-        symbol: "A$DC",
-        decimals: 6,
-      },
-      {
-        address: "0x94025780a1aB58868D9B2dBBB775f44b32e8E6e5",
-        name: "BetSwirl v2",
-        symbol: "BETS",
-        decimals: 18,
-      },
-      {
-        address: "0xF92E4b278380f39fADc24483C7baC61b73EE93F2",
-        name: "BondToken",
-        symbol: "TBND",
-        decimals: 18,
-      },
-      {
-        address: "0x14f7b60b3234aCF3321198fE6d9792dE130a502c",
-        name: "Singapore Dollar Digital Coin",
-        symbol: "SG$DC",
-        decimals: 6,
-      },
-      {
-        address: "0xb7c8bCA891143221a34DB60A26639785C4839040",
-        name: "InsurAce Sepolia",
-        symbol: "insurToken",
-        decimals: 18,
-      },
-      {
-        address: "0x4e51e0a8a5e31Acb0a0B5EB9E5301a21DeBFAbbe",
-        name: "New Zealand Dollar Digital Coin",
-        symbol: "NZ$DC",
-        decimals: 6,
-      },
-      {
-        address: "0xFd57b4ddBf88a4e07fF4e34C487b99af2Fe82a05",
-        name: "CCIP-BnM",
-        symbol: "CCIP-BnM",
-        decimals: 18,
-      },
-      {
-        address: "0x832bA6abcAdC68812be372F4ef20aAC268bA20B7",
-        name: "FugaziUSDCToken",
-        symbol: "FUGAZIUSDC",
-        decimals: 6,
-      },
-      {
-        address: "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238",
-        name: "USDC",
-        symbol: "USDC",
-        decimals: 6,
-      },
-    ],
-    icon: fujiIcon.src,
-  },
-  {
-    name: "BNB chain",
-    chainId: "97",
-    chainSelector: "13264668187771770619",
-    supportedTokens: [
-      {
-        address: "0x466D489b6d36E7E3b824ef491C225F5830E81cC1",
-        name: "CCIP-LnM",
-        symbol: "CCIP-LnM",
-        decimals: 18,
-      },
-      {
-        address: "0xFd57b4ddBf88a4e07fF4e34C487b99af2Fe82a05",
-        name: "CCIP-BnM",
-        symbol: "CCIP-BnM",
-        decimals: 18,
-      },
-    ],
-    icon: bnbIcon.src,
-  },
-  {
-    name: "Base Goerli",
-    chainId: "84531",
-    chainSelector: "5790810961207155433",
-    supportedTokens: [
-      {
-        address: "0x466D489b6d36E7E3b824ef491C225F5830E81cC1",
-        name: "CCIP-LnM",
-        symbol: "CCIP-LnM",
-        decimals: 18,
-      },
-      {
-        address: "0xFd57b4ddBf88a4e07fF4e34C487b99af2Fe82a05",
-        name: "CCIP-BnM",
-        symbol: "CCIP-BnM",
-        decimals: 18,
-      },
-    ],
-    icon: baseIcon.src,
-  },
-  {
-    name: "Arbitrum Sepolia",
-    chainId: "421614",
-    chainSelector: "3478487238524512106",
-    supportedTokens: [
-      {
-        address: "0x466D489b6d36E7E3b824ef491C225F5830E81cC1",
-        name: "CCIP-LnM",
-        symbol: "CCIP-LnM",
-        decimals: 18,
-      },
-      {
-        address: "0xFd57b4ddBf88a4e07fF4e34C487b99af2Fe82a05",
-        name: "CCIP-BnM",
-        symbol: "CCIP-BnM",
-        decimals: 18,
-      },
-      {
-        address: "0xc4bF5CbDaBE595361438F8c6a187bDc330539c60",
-        name: "Gho Token",
-        symbol: "GHO",
-        decimals: 18,
-      },
-      {
-        address: "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238",
-        name: "USDC",
-        symbol: "USDC",
-        decimals: 6,
-      },
-    ],
-    icon: arbitrumIcon.src,
-  },
+  // {
+  //   name: "Optimism Goerli",
+  //   chainId: "420",
+  //   chainSelector: "2664363617261496610",
+  //   supportedTokens: [
+  //     {
+  //       address: "0xFd57b4ddBf88a4e07fF4e34C487b99af2Fe82a05",
+  //       decimals: 18,
+  //       name: "CCIP-BnM",
+  //       symbol: "CCIP-BnM",
+  //     },
+  //     {
+  //       address: "0x466D489b6d36E7E3b824ef491C225F5830E81cC1",
+  //       decimals: 18,
+  //       name: "CCIP-LnM",
+  //       symbol: "CCIP-LnM",
+  //     },
+  //   ],
+  //   icon: optimismIcon.src,
+  // },
+  // {
+  //   name: "Avalanche Fuji",
+  //   chainId: "43113",
+  //   chainSelector: "14767482510784806043",
+  //   supportedTokens: [
+  //     {
+  //       address: "0x466D489b6d36E7E3b824ef491C225F5830E81cC1",
+  //       name: "CCIP-LnM",
+  //       symbol: "CCIP-LnM",
+  //       decimals: 18,
+  //     },
+  //     {
+  //       address: "0xFd57b4ddBf88a4e07fF4e34C487b99af2Fe82a05",
+  //       name: "CCIP-BnM",
+  //       symbol: "CCIP-BnM",
+  //       decimals: 18,
+  //     },
+  //     {
+  //       address: "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238",
+  //       name: "USDC",
+  //       symbol: "USDC",
+  //       decimals: 6,
+  //     },
+  //   ],
+  //   icon: fujiIcon.src,
+  // },
+  // {
+  //   name: "BNB chain",
+  //   chainId: "97",
+  //   chainSelector: "13264668187771770619",
+  //   supportedTokens: [
+  //     {
+  //       address: "0x466D489b6d36E7E3b824ef491C225F5830E81cC1",
+  //       name: "CCIP-LnM",
+  //       symbol: "CCIP-LnM",
+  //       decimals: 18,
+  //     },
+  //     {
+  //       address: "0xFd57b4ddBf88a4e07fF4e34C487b99af2Fe82a05",
+  //       name: "CCIP-BnM",
+  //       symbol: "CCIP-BnM",
+  //       decimals: 18,
+  //     },
+  //   ],
+  //   icon: bnbIcon.src,
+  // },
+  // {
+  //   name: "Base Goerli",
+  //   chainId: "84531",
+  //   chainSelector: "5790810961207155433",
+  //   supportedTokens: [
+  //     {
+  //       address: "0x466D489b6d36E7E3b824ef491C225F5830E81cC1",
+  //       name: "CCIP-LnM",
+  //       symbol: "CCIP-LnM",
+  //       decimals: 18,
+  //     },
+  //     {
+  //       address: "0xFd57b4ddBf88a4e07fF4e34C487b99af2Fe82a05",
+  //       name: "CCIP-BnM",
+  //       symbol: "CCIP-BnM",
+  //       decimals: 18,
+  //     },
+  //   ],
+  //   icon: baseIcon.src,
+  // },
+  // {
+  //   name: "Arbitrum Sepolia",
+  //   chainId: "421614",
+  //   chainSelector: "3478487238524512106",
+  //   supportedTokens: [
+  //     {
+  //       address: "0x466D489b6d36E7E3b824ef491C225F5830E81cC1",
+  //       name: "CCIP-LnM",
+  //       symbol: "CCIP-LnM",
+  //       decimals: 18,
+  //     },
+  //     {
+  //       address: "0xFd57b4ddBf88a4e07fF4e34C487b99af2Fe82a05",
+  //       name: "CCIP-BnM",
+  //       symbol: "CCIP-BnM",
+  //       decimals: 18,
+  //     },
+  //     {
+  //       address: "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238",
+  //       name: "USDC",
+  //       symbol: "USDC",
+  //       decimals: 6,
+  //     },
+  //   ],
+  //   icon: arbitrumIcon.src,
+  // },
 ]

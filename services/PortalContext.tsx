@@ -41,7 +41,7 @@ export default function PortalContextProvider(
 ) {
   const { address } = useAccount()
   const { chain } = getNetwork()
-  const { getActiveChainFactoryData } = useContext(ChainContext)
+  const { getActiveChainData } = useContext(ChainContext)
   const [currentPortal, setCurrentPortal] = useState<Portal | null>(null)
 
   async function getPortal(portalAddress: Address): Promise<Portal> {
@@ -51,6 +51,13 @@ export default function PortalContextProvider(
     const requiredConfirmationsAmount = await getRequiredConfirmationsAmount(
       portalAddress
     )
+    const portalChainSelector = await getPortalChainSelector(portalAddress)
+    const chain = registeredChains.find(
+      (registeredChain) => registeredChain.chainSelector === portalChainSelector
+    )
+
+    if (!chain) throw new Error("Chain not found")
+
     return {
       address: portalAddress,
       owners: owners,
@@ -58,6 +65,7 @@ export default function PortalContextProvider(
       numberOfTransactions: transactionsCount,
       requiredConfirmationsAmount: requiredConfirmationsAmount,
       lastTransaction: 0,
+      chain,
     }
   }
 
@@ -78,10 +86,10 @@ export default function PortalContextProvider(
   }
 
   async function getPortalAddresses(): Promise<Address[]> {
-    const portalSigFactoryData = getActiveChainFactoryData()
+    const portalSigFactoryData = getActiveChainData()
     if (!portalSigFactoryData) return []
     const portalsAddresses: any = await readContract({
-      address: portalSigFactoryData.contractAddress,
+      address: portalSigFactoryData.portalFactoryAddress,
       abi: PORTALSIG_FACTORY_CONTRACT_ABI,
       functionName: "getWalletsByOwner",
       args: [address],
@@ -123,6 +131,17 @@ export default function PortalContextProvider(
       functionName: "getRequiredConfirmationsAmount",
     })
     return requiredConfirmationsAmount.toString()
+  }
+
+  async function getPortalChainSelector(
+    portalAddress: Address
+  ): Promise<string> {
+    const portalChainSelector: any = await readContract({
+      address: portalAddress,
+      abi: PORTALSIG_WALLET_CONTRACT_ABI,
+      functionName: "getPortalChainSelector",
+    })
+    return portalChainSelector.toString()
   }
 
   function getPortalChain(): Chain | undefined {

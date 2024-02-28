@@ -22,18 +22,19 @@ import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { Address, parseUnits } from "viem"
 
 // Services & Utils
-import { ChainSupportedTokens, TokenContext } from "@/services/TokenContext"
+import { TokenContext } from "@/services/TokenContext"
 import { PORTALSIG_WALLET_CONTRACT_ABI } from "@/constants/constants"
 import { PortalContext } from "@/services/PortalContext"
 import { TransactionContext } from "@/services/TransactionsContext"
 import { ChainContext, ContractCallType } from "@/services/ChainContext"
+import { DestinationChainsData } from "@/services/data/chains"
 
 export default function CreateTransactionDialog() {
   const { toast } = useToast()
   const queryClient = useQueryClient()
 
-  const { getTokenByAddress, getAllSupportedTokens } = useContext(TokenContext)
-  const { currentPortal, isExternalChain } = useContext(PortalContext)
+  const { getTokenByAddress, getSupportedTokens } = useContext(TokenContext)
+  const { currentPortal } = useContext(PortalContext)
   const { getExplorerUrl } = useContext(TransactionContext)
   const { callContract } = useContext(ChainContext)
 
@@ -41,7 +42,7 @@ export default function CreateTransactionDialog() {
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false)
 
   const { data: allSupportedTokens, isLoading } = useQuery<
-    ChainSupportedTokens[],
+    DestinationChainsData[],
     Error
   >(
     ["allSupportedTokens", currentPortal?.address],
@@ -49,7 +50,7 @@ export default function CreateTransactionDialog() {
       if (!currentPortal?.address) {
         throw new Error("Portal address is undefined")
       }
-      return getAllSupportedTokens()
+      return getSupportedTokens()
     },
     {
       enabled: !!currentPortal?.address,
@@ -67,9 +68,6 @@ export default function CreateTransactionDialog() {
   ): Promise<void> {
     if (!currentPortal) return
     try {
-      destinationChainSelector = isExternalChain(destinationChainSelector)
-        ? destinationChainSelector
-        : "0"
       const tokenSent = getTokenByAddress(token)
       const result = await callContract({
         contractAddress: currentPortal.address,

@@ -32,7 +32,7 @@ export default function CreatePage() {
   const { address } = useAccount()
   const router = useRouter()
 
-  const { callContract, getActiveChainFactoryData } = useContext(ChainContext)
+  const { callContract, getActiveChainData } = useContext(ChainContext)
   const { getExplorerUrl } = useContext(TransactionContext)
 
   const [ownersAddresses, setOwnersAddresses] = useState<Address[]>([
@@ -117,19 +117,24 @@ export default function CreatePage() {
   async function createPortalSig(): Promise<void> {
     setIsLoading(true)
     try {
-      const portalSigFactoryData = getActiveChainFactoryData()
+      const portalSigFactoryData = getActiveChainData()
       if (!portalSigFactoryData) return
-      const { contractAddress, ccipRouterAddress, linkAddress } =
-        portalSigFactoryData
+      const {
+        portalFactoryAddress,
+        ccipRouterAddress,
+        linkTokenAddress,
+        chainSelector,
+      } = portalSigFactoryData
       const result = await callContract({
-        contractAddress,
+        contractAddress: portalFactoryAddress,
         abi: PORTALSIG_FACTORY_CONTRACT_ABI,
         method: "deployPortalSigWallet",
         args: [
           ownersAddresses,
           parseInt(numberOfConfirmation.toString()),
           ccipRouterAddress,
-          linkAddress,
+          linkTokenAddress,
+          chainSelector,
         ],
         type: ContractCallType.WRITE,
       })

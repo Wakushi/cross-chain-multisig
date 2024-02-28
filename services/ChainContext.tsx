@@ -9,7 +9,6 @@ import {
   getNetwork,
 } from "@wagmi/core"
 import { Chain, registeredChains } from "@/services/data/chains"
-import { PORTALSIG_FACTORIES, PortalSigFactory } from "@/constants/constants"
 
 interface ChainContextProviderProps {
   children: ReactNode
@@ -31,13 +30,13 @@ export interface ContractCallParams {
 interface ChainContextProps {
   callContract: (params: ContractCallParams) => Promise<any>
   getChainBySelector: (chainSelector: string) => Chain | null
-  getActiveChainFactoryData: () => PortalSigFactory | null
+  getActiveChainData: () => Chain | null
 }
 
 const ChainContext = createContext<ChainContextProps>({
   callContract: async () => {},
   getChainBySelector: () => null,
-  getActiveChainFactoryData: () => null,
+  getActiveChainData: () => null,
 })
 
 export default function ChainContextProvider(props: ChainContextProviderProps) {
@@ -71,23 +70,16 @@ export default function ChainContextProvider(props: ChainContextProviderProps) {
   }
 
   function getChainBySelector(chainSelector: string): Chain | null {
-    if (chainSelector === "0" && chain) {
-      return (
-        registeredChains.find(
-          (registeredChain) => +registeredChain.chainId === chain.id
-        ) || null
-      )
-    }
     return (
       registeredChains.find((chain) => chain.chainSelector === chainSelector) ||
       null
     )
   }
 
-  function getActiveChainFactoryData(): PortalSigFactory | null {
+  function getActiveChainData(): Chain | null {
     if (!chain) return null
-    const factory = PORTALSIG_FACTORIES.find(
-      (factory) => factory.chainId === chain.id
+    const factory = registeredChains.find(
+      (registeredChain) => +registeredChain.chainId === chain.id
     )
     return factory || null
   }
@@ -95,7 +87,7 @@ export default function ChainContextProvider(props: ChainContextProviderProps) {
   const context = {
     callContract,
     getChainBySelector,
-    getActiveChainFactoryData,
+    getActiveChainData,
   }
 
   return (

@@ -1,6 +1,6 @@
 import { createContext, ReactNode, useContext, useState } from "react"
 import { Address } from "viem"
-import { ethToken, registeredChains, tokenLogos } from "./data/chains"
+import { Chain, DestinationChainsData, tokenLogos } from "./data/chains"
 import { Token } from "@/types/Token"
 import {
   Alchemy,
@@ -8,8 +8,10 @@ import {
   TokenBalancesResponseErc20,
   TokenMetadataResponse,
 } from "alchemy-sdk"
-import { fetchBalance, getNetwork } from "@wagmi/core"
+import { fetchBalance } from "@wagmi/core"
 import { PortalContext } from "./PortalContext"
+import { ChainContext } from "./ChainContext"
+import { ZERO_ADDRESS } from "@/lib/utils"
 
 export interface ChainSupportedTokens {
   chainId: string
@@ -30,7 +32,7 @@ interface TokenContextProps {
   getAllAddressTokens: (address: Address, network?: Network) => Promise<Token[]>
   getTokenByAddress: (tokenAddress: Address) => Token | null
   getERC20TokenBalance: (account: Address, token: Token) => Promise<any>
-  getAllSupportedTokens: () => Promise<ChainSupportedTokens[]>
+  getSupportedTokens: () => Promise<DestinationChainsData[]>
   getAddressTotalBalanceInUSD: (address: Address) => Promise<number>
 }
 
@@ -44,7 +46,7 @@ const TokenContext = createContext<TokenContextProps>({
   getERC20TokenBalance: async () => {
     return
   },
-  getAllSupportedTokens: async () => {
+  getSupportedTokens: async () => {
     return []
   },
   getAddressTotalBalanceInUSD: async () => {
@@ -54,28 +56,26 @@ const TokenContext = createContext<TokenContextProps>({
 
 export default function TokenContextProvider(props: TokenContextProviderProps) {
   const { currentPortal } = useContext(PortalContext)
-  const { chain } = getNetwork()
+  const { getActiveChainData } = useContext(ChainContext)
   const [currentPortalTokens, setCurrentPortalTokens] = useState<Token[]>([])
+  const chainData: Chain | null = getActiveChainData()
 
-  async function getAllSupportedTokens(): Promise<ChainSupportedTokens[]> {
-    const allSupportedTokensArray: ChainSupportedTokens[] = []
-    for (let registeredChain of registeredChains) {
-      allSupportedTokensArray.push({
-        chainId: registeredChain.chainId,
-        chainSelector: registeredChain.chainSelector,
-        supportedTokens: registeredChain.supportedTokens,
-      })
-    }
+  async function getSupportedTokens(): Promise<DestinationChainsData[]> {
+    if (!chainData) return []
+    const supportedTokens: DestinationChainsData[] = chainData.destinationChains
 
-    const portalTokens = await getAllAddressTokens(currentPortal!.address)
+    const portalTokens = await getAllAddressTokens(
+      currentPortal!.address,
+      chainData?.alchemyNetwork
+    )
 
-    allSupportedTokensArray.map((chainSupportedTokens) => {
-      if (+chainSupportedTokens.chainId === chain?.id) {
-        chainSupportedTokens.supportedTokens = [...portalTokens]
+    supportedTokens?.map((supportedToken: DestinationChainsData) => {
+      if (supportedToken.destinationChain === chainData?.chainId) {
+        supportedToken.tokens.push(...portalTokens)
       }
     })
 
-    return allSupportedTokensArray
+    return supportedTokens
   }
 
   async function getAllAddressTokens(
@@ -87,10 +87,25 @@ export default function TokenContextProvider(props: TokenContextProviderProps) {
 
     const addressTokens: Token[] = []
 
-    addressTokens.push({
-      ...ethToken,
-      balance: await getEthBalance(address, alchemy),
-    })
+    const sameChainDestinationData = chainData?.destinationChains.find(
+      (destinationChain: DestinationChainsData) => {
+        return (
+          destinationChain.destinationChainSelector === chainData?.chainSelector
+        )
+      }
+    )
+
+    if (sameChainDestinationData) {
+      const nativeToken = sameChainDestinationData.tokens.find(
+        (token: Token) => token.address === ZERO_ADDRESS
+      )
+      if (nativeToken) {
+        addressTokens.push({
+          ...nativeToken,
+          balance: await getNativeBalance(address, alchemy),
+        })
+      }
+    }
 
     for (let token of tokenBalances) {
       if (!token.tokenBalance) continue
@@ -151,11 +166,11 @@ export default function TokenContextProvider(props: TokenContextProviderProps) {
     return await alchemyInstance.core.getTokenMetadata(tokenAddress)
   }
 
-  async function getEthBalance(address: Address, alchemyInstance: Alchemy) {
-    const ethBalance = await (
+  async function getNativeBalance(address: Address, alchemyInstance: Alchemy) {
+    const nativeBalance = await (
       await alchemyInstance.core.getBalance(address)
     ).toString()
-    return (+ethBalance / Math.pow(10, 18)).toFixed(4)
+    return (+nativeBalance / Math.pow(10, 18)).toFixed(4)
   }
 
   function getTokenByAddress(tokenAddress: Address): Token | null {
@@ -163,12 +178,14 @@ export default function TokenContextProvider(props: TokenContextProviderProps) {
       (token) => token.address.toLowerCase() === tokenAddress.toLowerCase()
     )
     if (portalToken) return portalToken
-    const supportedTokens = registeredChains
-      .map((chain) => chain.supportedTokens)
+    const currentChainDestinationChains = chainData?.destinationChains
+    const token = currentChainDestinationChains
+      ?.map((destinationChain) => destinationChain.tokens)
       .flat()
-    const token = supportedTokens.find(
-      (token) => token.address.toLowerCase() === tokenAddress.toLowerCase()
-    )
+      .find(
+        (token) => token.address.toLowerCase() === tokenAddress.toLowerCase()
+      )
+
     return token || null
   }
 
@@ -200,7 +217,6 @@ export default function TokenContextProvider(props: TokenContextProviderProps) {
     )
       .then((response) => response.json())
       .then(({ data }) => data?.price)
-      .catch((err) => console.error(err))
   }
 
   async function getAddressTotalBalanceInUSD(
@@ -220,7 +236,7 @@ export default function TokenContextProvider(props: TokenContextProviderProps) {
     getAllAddressTokens,
     getTokenByAddress,
     getERC20TokenBalance,
-    getAllSupportedTokens,
+    getSupportedTokens,
     getAddressTotalBalanceInUSD,
   }
 

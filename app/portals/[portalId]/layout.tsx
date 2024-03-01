@@ -23,6 +23,8 @@ import {
 } from "@fortawesome/free-solid-svg-icons"
 import { TokenContext } from "@/services/TokenContext"
 import LoaderSmall from "@/components/ui/loader-small/loader-small"
+import TooltipWrapper from "@/components/ui/custom-tooltip"
+import Image from "next/image"
 
 interface PortalPageLayoutProps {
   children: ReactNode
@@ -34,7 +36,7 @@ export default function PortalPageLayout({
   children,
 }: PortalPageLayoutProps) {
   const pathname = usePathname()
-  const { setCurrentPortalByAddress } = useContext(PortalContext)
+  const { setCurrentPortalByAddress, currentPortal } = useContext(PortalContext)
   const { getAddressTotalBalanceInUSD } = useContext(TokenContext)
 
   useEffect(() => {
@@ -93,6 +95,19 @@ export default function PortalPageLayout({
                 {getShortenedAddress(params.portalId)}
               </p>
               <Copy contentToCopy={params.portalId} />
+              {currentPortal && (
+                <TooltipWrapper
+                  side="left"
+                  message={`Portal deployed on ${currentPortal.chain.name}`}
+                >
+                  <Image
+                    src={currentPortal.chain.icon}
+                    alt={`${currentPortal.chain.name} icon`}
+                    width={40}
+                    height={40}
+                  />
+                </TooltipWrapper>
+              )}
             </div>
           </div>
           {/* NAVIGATION */}

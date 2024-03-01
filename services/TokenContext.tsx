@@ -1,6 +1,6 @@
 import { createContext, ReactNode, useContext, useState } from "react"
 import { Address } from "viem"
-import { Chain, DestinationChainsData, tokenLogos } from "./data/chains"
+import { DestinationChainsData, tokenLogos } from "./data/chains"
 import { Token } from "@/types/Token"
 import {
   Alchemy,

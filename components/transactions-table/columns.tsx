@@ -35,13 +35,17 @@ import { formatUnits } from "viem"
 import { useQueryClient } from "@tanstack/react-query"
 import { PayFeesIn, TokenContext } from "@/services/TokenContext"
 import { ChainContext, ContractCallType } from "@/services/ChainContext"
-import { PORTALSIG_WALLET_CONTRACT_ABI } from "@/constants/constants"
+import {
+  PORTALGATE_CONTRACT_ABI,
+  PORTALSIG_WALLET_CONTRACT_ABI,
+} from "@/constants/constants"
 import { TransactionContext } from "@/services/TransactionsContext"
 import { getShortenedAddress } from "@/lib/utils"
 // React
 import { useContext, useState } from "react"
 import { PortalContext } from "@/services/PortalContext"
 import Image from "next/image"
+import { Chain } from "@/services/data/chains"
 
 export const columns: ColumnDef<Transaction>[] = [
   {
@@ -334,8 +338,9 @@ export const columns: ColumnDef<Transaction>[] = [
 
       const { getPortalTransactions, getExplorerUrl } =
         useContext(TransactionContext)
-      const { callContract } = useContext(ChainContext)
+      const { callContract, getActiveChainData } = useContext(ChainContext)
       const { currentPortal } = useContext(PortalContext)
+      const chain: Chain | null = getActiveChainData()
 
       const [isLoading, setIsLoading] = useState<boolean>(false)
 
@@ -345,15 +350,32 @@ export const columns: ColumnDef<Transaction>[] = [
       }
 
       async function onConfirm() {
+        if (!currentPortal) return
         setIsLoading(true)
         try {
-          const result = await callContract({
-            contractAddress: transaction.portal.address,
-            abi: PORTALSIG_WALLET_CONTRACT_ABI,
-            method: "confirmTransaction",
-            args: [transaction.id],
-            type: ContractCallType.WRITE,
-          })
+          let result
+          if (chain && chain.chainId !== currentPortal.chain.chainId) {
+            result = await callContract({
+              contractAddress: chain.portalGateAddress,
+              abi: PORTALGATE_CONTRACT_ABI,
+              method: "confirmTransaction",
+              args: [
+                currentPortal.address,
+                currentPortal.chain.chainSelector,
+                transaction.id,
+                PayFeesIn.LINK,
+              ],
+              type: ContractCallType.WRITE,
+            })
+          } else {
+            result = await callContract({
+              contractAddress: transaction.portal.address,
+              abi: PORTALSIG_WALLET_CONTRACT_ABI,
+              method: "confirmTransaction",
+              args: [transaction.id],
+              type: ContractCallType.WRITE,
+            })
+          }
           onCallCompleted(
             {
               title: TransactionToastTitle.CONFIRMED,
@@ -373,15 +395,32 @@ export const columns: ColumnDef<Transaction>[] = [
       }
 
       async function onRevoke() {
+        if (!currentPortal) return
         setIsLoading(true)
         try {
-          const result = await callContract({
-            contractAddress: transaction.portal.address,
-            abi: PORTALSIG_WALLET_CONTRACT_ABI,
-            method: "revokeConfirmation",
-            args: [transaction.id],
-            type: ContractCallType.WRITE,
-          })
+          let result
+          if (chain && chain.chainId !== currentPortal.chain.chainId) {
+            result = await callContract({
+              contractAddress: chain.portalGateAddress,
+              abi: PORTALGATE_CONTRACT_ABI,
+              method: "revokeConfirmation",
+              args: [
+                currentPortal.address,
+                currentPortal.chain.chainSelector,
+                transaction.id,
+                PayFeesIn.LINK,
+              ],
+              type: ContractCallType.WRITE,
+            })
+          } else {
+            result = await callContract({
+              contractAddress: transaction.portal.address,
+              abi: PORTALSIG_WALLET_CONTRACT_ABI,
+              method: "revokeConfirmation",
+              args: [transaction.id],
+              type: ContractCallType.WRITE,
+            })
+          }
           onCallCompleted(
             {
               title: TransactionToastTitle.REVOKED,
@@ -401,15 +440,32 @@ export const columns: ColumnDef<Transaction>[] = [
       }
 
       async function onExecute() {
+        if (!currentPortal) return
         setIsLoading(true)
         try {
-          const result = await callContract({
-            contractAddress: transaction.portal.address,
-            abi: PORTALSIG_WALLET_CONTRACT_ABI,
-            method: "executeTransaction",
-            args: [transaction.id],
-            type: ContractCallType.WRITE,
-          })
+          let result
+          if (chain && chain.chainId !== currentPortal.chain.chainId) {
+            result = await callContract({
+              contractAddress: chain.portalGateAddress,
+              abi: PORTALGATE_CONTRACT_ABI,
+              method: "executeTransaction",
+              args: [
+                currentPortal.address,
+                currentPortal.chain.chainSelector,
+                transaction.id,
+                PayFeesIn.LINK,
+              ],
+              type: ContractCallType.WRITE,
+            })
+          } else {
+            result = await callContract({
+              contractAddress: transaction.portal.address,
+              abi: PORTALSIG_WALLET_CONTRACT_ABI,
+              method: "executeTransaction",
+              args: [transaction.id],
+              type: ContractCallType.WRITE,
+            })
+          }
           onCallCompleted(
             {
               title: TransactionToastTitle.EXECUTED,

@@ -25,6 +25,7 @@ export interface ContractCallParams {
   method: string
   args: any[]
   type: ContractCallType
+  chainId?: number
 }
 
 interface ChainContextProps {
@@ -48,12 +49,18 @@ export default function ChainContextProvider(props: ChainContextProviderProps) {
     method,
     args,
     type,
+    chainId,
   }: ContractCallParams): Promise<any> {
     const payload = {
       address: contractAddress,
       abi,
       functionName: method,
       args,
+      chainId: chainId || chain?.id,
+    }
+
+    if (chainId) {
+      payload.chainId = chainId
     }
 
     if (type === ContractCallType.READ) {

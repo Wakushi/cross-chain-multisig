@@ -56,22 +56,25 @@ const TokenContext = createContext<TokenContextProps>({
 
 export default function TokenContextProvider(props: TokenContextProviderProps) {
   const { currentPortal } = useContext(PortalContext)
-  const { getActiveChainData } = useContext(ChainContext)
   const [currentPortalTokens, setCurrentPortalTokens] = useState<Token[]>([])
-  const chainData: Chain | null = getActiveChainData()
 
   async function getSupportedTokens(): Promise<DestinationChainsData[]> {
-    if (!chainData) return []
-    const supportedTokens: DestinationChainsData[] = chainData.destinationChains
+    if (!currentPortal) return []
+    const supportedTokens: DestinationChainsData[] = [
+      ...currentPortal.chain.destinationChains,
+    ]
 
-    const portalTokens = await getAllAddressTokens(
+    const portalTokens: Token[] = await getAllAddressTokens(
       currentPortal!.address,
-      chainData?.alchemyNetwork
+      currentPortal.chain.alchemyNetwork
     )
 
     supportedTokens?.map((supportedToken: DestinationChainsData) => {
-      if (supportedToken.destinationChain === chainData?.chainId) {
-        supportedToken.tokens.push(...portalTokens)
+      if (
+        supportedToken.destinationChainSelector ===
+        currentPortal.chain?.chainSelector
+      ) {
+        supportedToken.tokens = portalTokens
       }
     })
 
@@ -87,16 +90,18 @@ export default function TokenContextProvider(props: TokenContextProviderProps) {
 
     const addressTokens: Token[] = []
 
-    const sameChainDestinationData = chainData?.destinationChains.find(
-      (destinationChain: DestinationChainsData) => {
-        return (
-          destinationChain.destinationChainSelector === chainData?.chainSelector
-        )
-      }
-    )
+    const activeChainDestinationData: DestinationChainsData | undefined =
+      currentPortal?.chain?.destinationChains.find(
+        (destinationChain: DestinationChainsData) => {
+          return (
+            destinationChain.destinationChainSelector ===
+            currentPortal.chain?.chainSelector
+          )
+        }
+      )
 
-    if (sameChainDestinationData) {
-      const nativeToken = sameChainDestinationData.tokens.find(
+    if (activeChainDestinationData) {
+      const nativeToken = activeChainDestinationData.tokens.find(
         (token: Token) => token.address === ZERO_ADDRESS
       )
       if (nativeToken) {
@@ -135,6 +140,10 @@ export default function TokenContextProvider(props: TokenContextProviderProps) {
     }
 
     for (let token of addressTokens) {
+      const tokenName = token.name.split(" ")[0].toUpperCase()
+      if (tokenName === "WRAPPED") {
+        continue
+      }
       token.price = await getERC20TokenPrice(token)
       if (token.balance && token.price) {
         token.value = token.price * +token.balance
@@ -178,7 +187,8 @@ export default function TokenContextProvider(props: TokenContextProviderProps) {
       (token) => token.address.toLowerCase() === tokenAddress.toLowerCase()
     )
     if (portalToken) return portalToken
-    const currentChainDestinationChains = chainData?.destinationChains
+    const currentChainDestinationChains =
+      currentPortal?.chain?.destinationChains
     const token = currentChainDestinationChains
       ?.map((destinationChain) => destinationChain.tokens)
       .flat()
@@ -207,7 +217,7 @@ export default function TokenContextProvider(props: TokenContextProviderProps) {
   async function getERC20TokenPrice(token: Token): Promise<number> {
     const tokenName = token.name.split(" ")[0].toUpperCase()
     return fetch(
-      `https://api.mobula.io/api/1/market/data?asset=${tokenName} `,
+      `https://api.mobula.io/api/1/market/data?symbol=${tokenName} `,
       {
         method: "GET",
         headers: {

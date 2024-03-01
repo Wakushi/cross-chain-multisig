@@ -35,9 +35,14 @@ import { Token } from "@/types/Token"
 // Services / Utils
 import { PayFeesIn, TokenContext } from "@/services/TokenContext"
 import { PortalContext } from "@/services/PortalContext"
-import { DestinationChainsData, registeredChains } from "@/services/data/chains"
+import {
+  Chain,
+  DestinationChainsData,
+  registeredChains,
+} from "@/services/data/chains"
 import { Address } from "viem"
 import Image from "next/image"
+import { ChainContext } from "@/services/ChainContext"
 
 interface CreateTransactionFormProps {
   createTransaction: (
@@ -49,7 +54,7 @@ interface CreateTransactionFormProps {
     executesOnRequirementMet: boolean,
     payFeesIn: string
   ) => void
-  allSupportedTokens: DestinationChainsData[] | undefined
+  supportedTokens: DestinationChainsData[] | undefined
   isLoading: boolean
   setIsSubmitting: (isSubmitting: boolean) => void
 }
@@ -69,12 +74,12 @@ const formSchema = z.object({
 
 export default function CreateTransactionForm({
   createTransaction,
-  allSupportedTokens,
+  supportedTokens,
   setIsSubmitting,
   isLoading,
 }: CreateTransactionFormProps) {
   const { reset } = useForm()
-  const { isExternalChain } = useContext(PortalContext)
+  const { currentPortal } = useContext(PortalContext)
   const { getTokenByAddress } = useContext(TokenContext)
 
   const [selectedChain, setSelectedChain] = useState<string>("")
@@ -106,7 +111,7 @@ export default function CreateTransactionForm({
   }, [selectedToken])
 
   function onChainChange() {
-    const chainSupportedTokens = allSupportedTokens?.find(
+    const chainSupportedTokens = supportedTokens?.find(
       (chain) => chain.destinationChainSelector === selectedChain
     )?.tokens
     setSelectedChainSupportedTokens(chainSupportedTokens || [])
@@ -123,6 +128,10 @@ export default function CreateTransactionForm({
     setSelectedTokenBalance(
       token?.balance ? Number(token.balance).toFixed(2) : "0"
     )
+  }
+
+  function isCrossChainTransaction(): boolean {
+    return selectedChain !== currentPortal?.chain.chainSelector
   }
 
   function onSubmit(values: z.infer<typeof formSchema>) {
@@ -241,7 +250,7 @@ export default function CreateTransactionForm({
                     <SelectContent>
                       {selectedChainSupportedTokens.map((supportedToken) => (
                         <SelectItem
-                          key={supportedToken.address}
+                          key={supportedToken.address + supportedToken.name}
                           value={supportedToken.address.toString()}
                         >
                           {supportedToken.name}
@@ -316,8 +325,8 @@ export default function CreateTransactionForm({
               </FormItem>
             )}
           />
-          {/* EXECUTES ON REQUIREMENT */}
-          {isExternalChain(selectedChain) && (
+          {/* PAY XCHAIN FEES IN */}
+          {isCrossChainTransaction() && (
             <FormField
               control={form.control}
               name="payFeesIn"

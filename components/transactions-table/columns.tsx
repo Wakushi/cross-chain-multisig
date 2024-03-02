@@ -263,15 +263,6 @@ export const columns: ColumnDef<Transaction>[] = [
     },
   },
   {
-    accessorKey: "payFeesIn",
-    header: () => <div className="text-center">Pay Fees In</div>,
-    cell: ({ row }) => {
-      const payFeesIn =
-        row.getValue("payFeesIn") === PayFeesIn.LINK ? "LINK" : "ETH"
-      return <div className="text-center font-medium">{payFeesIn}</div>
-    },
-  },
-  {
     accessorKey: "status",
     id: "status",
     header: () => <div className="text-center">Status</div>,

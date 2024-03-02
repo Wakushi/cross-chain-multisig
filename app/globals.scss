@@ -63,6 +63,20 @@ body {
   color: var(--primary-color);
 }
 
+.action_button {
+  background-color: #fff;
+  font-weight: 600;
+  color: #000;
+  font-size: 1.25rem;
+  padding: 1.75rem 4rem;
+  transition: 300ms ease-in-out;
+  box-shadow: 0 5px 20px 4px rgba(0, 0, 0, 0.2);
+
+  &:hover {
+    opacity: 0.8;
+  }
+}
+
 .bg-grey {
   background: var(--bg-color-gradient);
 }

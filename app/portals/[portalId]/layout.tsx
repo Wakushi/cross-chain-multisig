@@ -157,7 +157,7 @@ export default function PortalPageLayout({
           </div>
         </div>
         <CardContent className="p-6 pt-20 w-full overflow-scroll min-h-screen">
-          <Card className="w-full h-fit">{children} </Card>
+          <div className="w-full h-fit">{children} </div>
         </CardContent>
       </Card>
     </div>

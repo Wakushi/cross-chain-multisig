@@ -12,16 +12,8 @@ import PortalList from "@/components/portal-list"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 
-// Types
-import { Portal } from "@/types/Portal"
-
 export default function PortalsPage() {
-  const { getAllPortals } = useContext(PortalContext)
-
-  const { data: portals, isLoading } = useQuery<Portal[], Error>(
-    ["portals"],
-    getAllPortals
-  )
+  const { portals, isLoading } = useContext(PortalContext)
 
   if (isLoading) {
     return (

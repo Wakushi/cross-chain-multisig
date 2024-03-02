@@ -20,7 +20,6 @@ import { useQuery, useQueryClient } from "@tanstack/react-query"
 
 // Wagmi / Viem
 import { Address, parseUnits } from "viem"
-import { getNetwork } from "@wagmi/core"
 
 // Services & Utils
 import { PayFeesIn, TokenContext } from "@/services/TokenContext"
@@ -32,6 +31,7 @@ import { PortalContext } from "@/services/PortalContext"
 import { TransactionContext } from "@/services/TransactionsContext"
 import { ChainContext, ContractCallType } from "@/services/ChainContext"
 import { Chain, DestinationChainsData } from "@/services/data/chains"
+import { DEFAULT_STALE_TIME } from "@/lib/utils"
 
 export default function CreateTransactionDialog() {
   const { toast } = useToast()
@@ -59,6 +59,7 @@ export default function CreateTransactionDialog() {
     },
     {
       enabled: !!currentPortal?.address,
+      staleTime: DEFAULT_STALE_TIME,
     }
   )
 

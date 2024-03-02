@@ -13,7 +13,8 @@ import {
   PORTALSIG_WALLET_CONTRACT_ABI,
 } from "@/constants/constants"
 import { Chain, registeredChains } from "./data/chains"
-import { ChainContext } from "./ChainContext"
+import { useQuery } from "@tanstack/react-query"
+import { DEFAULT_STALE_TIME } from "@/lib/utils"
 
 interface PortalContextProviderProps {
   children: ReactNode
@@ -25,6 +26,8 @@ interface PortalContextProps {
   getPortalNativeBalance: (portalAddress: Address) => Promise<string>
   getAllPortals: () => Promise<Portal[]>
   setCurrentPortalByAddress: (portalAddress: Address) => Promise<void>
+  portals: Portal[] | undefined
+  isLoading: boolean
 }
 
 const PortalContext = createContext<PortalContextProps>({
@@ -33,6 +36,8 @@ const PortalContext = createContext<PortalContextProps>({
   getPortalNativeBalance: (portalAddress: Address) => Promise.resolve(""),
   getAllPortals: () => Promise.resolve([]),
   setCurrentPortalByAddress: (portalAddress: Address) => Promise.resolve(),
+  portals: undefined,
+  isLoading: false,
 })
 export default function PortalContextProvider(
   props: PortalContextProviderProps
@@ -40,7 +45,16 @@ export default function PortalContextProvider(
   const { address } = useAccount()
   const { chain } = getNetwork()
   const [currentPortal, setCurrentPortal] = useState<Portal | null>(null)
-  const [portals, setPortals] = useState<Portal[]>([])
+
+  const { data: portals, isLoading } = useQuery<Portal[], Error>(
+    ["portals"],
+    () => {
+      return getAllPortals()
+    },
+    {
+      staleTime: DEFAULT_STALE_TIME,
+    }
+  )
 
   async function getAllPortals(): Promise<Portal[]> {
     const portals: Portal[] = []
@@ -52,7 +66,6 @@ export default function PortalContextProvider(
         portals.push(portal)
       }
     }
-    setPortals(portals)
     return portals
   }
 
@@ -117,6 +130,7 @@ export default function PortalContextProvider(
   async function setCurrentPortalByAddress(
     portalAddress: Address
   ): Promise<void> {
+    if (!portals) return
     const portal = portals.find((portal) => portal.address === portalAddress)
     if (portal) setCurrentPortal(portal)
   }
@@ -200,6 +214,8 @@ export default function PortalContextProvider(
     isExternalChain,
     getPortalNativeBalance,
     setCurrentPortalByAddress,
+    portals,
+    isLoading,
   }
 
   return (

@@ -5,6 +5,8 @@ import { Address } from "viem"
 export const ZERO_ADDRESS: Address =
   "0x0000000000000000000000000000000000000000"
 
+export const DEFAULT_STALE_TIME = 1000 * 60 * 5 // 5 minutes
+
 export function getShortenedAddress(address: Address): string {
   return address ? address.slice(0, 6) + "..." + address.slice(-4) : address
 }

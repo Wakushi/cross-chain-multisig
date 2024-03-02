@@ -7,7 +7,7 @@ import Copy from "@/components/ui/copy/copy"
 // Services / Utils
 import { PortalContext } from "@/services/PortalContext"
 import { usePathname } from "next/navigation"
-import { getShortenedAddress } from "@/lib/utils"
+import { DEFAULT_STALE_TIME, getShortenedAddress } from "@/lib/utils"
 import { ReactNode, useContext, useEffect } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { Address } from "viem"
@@ -36,23 +36,27 @@ export default function PortalPageLayout({
   children,
 }: PortalPageLayoutProps) {
   const pathname = usePathname()
-  const { setCurrentPortalByAddress, currentPortal } = useContext(PortalContext)
-  const { getAddressTotalBalanceInUSD } = useContext(TokenContext)
+  const { setCurrentPortalByAddress, currentPortal, portals } =
+    useContext(PortalContext)
+  const { getAddressTotalBalanceInUSD, portalTokens } = useContext(TokenContext)
 
   useEffect(() => {
     setCurrentPortalByAddress(params.portalId)
-  }, [params.portalId])
+  }, [params.portalId, portals])
 
   const { data: balance, isLoading } = useQuery<number, Error>(
-    ["balance", params.portalId],
+    ["balance", params.portalId, portalTokens],
     () => {
-      if (!params.portalId) {
-        throw new Error("Portal address is undefined")
+      if (!params.portalId || !portalTokens) {
+        throw new Error(
+          "Portal address is undefined or portal tokens are empty"
+        )
       }
-      return getAddressTotalBalanceInUSD(params.portalId)
+      return getAddressTotalBalanceInUSD(params.portalId, portalTokens)
     },
     {
-      enabled: !!params.portalId,
+      enabled: !!params.portalId && !!portals && !!portalTokens,
+      staleTime: DEFAULT_STALE_TIME,
     }
   )
 
@@ -69,11 +73,10 @@ export default function PortalPageLayout({
           <LoaderSmall />
         </div>
       )
-    }
-    if (balance !== undefined) {
+    } else {
       return (
         <span className="font-light text-3xl">
-          {balance.toFixed(2) || "0.00"}
+          {balance?.toFixed(2) || "0.00"}
         </span>
       )
     }

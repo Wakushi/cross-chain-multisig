@@ -114,6 +114,15 @@ export const columns: ColumnDef<Transaction>[] = [
         row.getValue("amount"),
         tokenMetadata?.decimals ?? 18
       )
+
+      if (!tokenMetadata?.symbol) {
+        return (
+          <div className="scale-75">
+            <LoaderSmall />
+          </div>
+        )
+      }
+
       return (
         <div className="text-nowrap text-center">
           <span>{amount}</span>{" "}

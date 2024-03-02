@@ -24,10 +24,34 @@ import CreateTransactionDialog from "../create-transaction-dialog/create-transac
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
 import { faWallet } from "@fortawesome/free-solid-svg-icons"
 import vectorImg from "@/assets/images/vector.png"
+import TooltipWrapper from "../ui/custom-tooltip"
+import { useEffect, useRef } from "react"
 
 export default function PortalCard({ portal, view }: PortalCardProps) {
-  const { address, owners, balance, numberOfTransactions } = portal
+  const { address, owners, balance, numberOfTransactions, chain } = portal
   const router = useRouter()
+
+  const containerRef = useRef<HTMLDivElement | null>(null)
+
+  useEffect(() => {
+    const container = containerRef.current
+    if (container) {
+      container.addEventListener("mousemove", (e) => {
+        const rect = container.getBoundingClientRect()
+        const x = e.clientX - rect.left
+        const y = e.clientY - rect.top
+        const dx = x - rect.width / 2
+        const dy = y - rect.height / 2
+        const tiltX = dy / rect.height
+        const tiltY = -dx / rect.width
+
+        container.style.setProperty("--x", `${x}px`)
+        container.style.setProperty("--y", `${y}px`)
+        container.style.setProperty("--rotateX", `${tiltX * 20}deg`)
+        container.style.setProperty("--rotateY", `${tiltY * 20}deg`)
+      })
+    }
+  }, [])
 
   function navigateToPortal(portalAddress: Address): void {
     router.push(`/portals/${portalAddress}`)
@@ -42,17 +66,36 @@ export default function PortalCard({ portal, view }: PortalCardProps) {
       key={address}
       className={`${classes.portal_card} ${
         isDetailedView() ? classes.detail : classes.small
-      }`}
+      } mouse-cursor-gradient-tracking`}
       onClick={() => navigateToPortal(address)}
+      ref={containerRef}
     >
       <div className="relative z-[2]">
         <CardHeader>
-          <CardTitle className={`${classes.title} flex justify-between`}>
+          <CardTitle
+            className={`${classes.title} flex items-center justify-between`}
+          >
             <div>
               {getShortenedAddress(address)}
               <Copy contentToCopy={address} />
             </div>
-            <FontAwesomeIcon icon={faWallet} className={classes.wallet_icon} />
+            <div className="flex items-center gap-1">
+              <TooltipWrapper
+                side="left"
+                message={`Portal deployed on ${chain.name}`}
+              >
+                <Image
+                  src={chain.icon}
+                  alt={`${chain.name} icon`}
+                  width={40}
+                  height={40}
+                />
+              </TooltipWrapper>
+              <FontAwesomeIcon
+                icon={faWallet}
+                className={classes.wallet_icon}
+              />
+            </div>
           </CardTitle>
           <CardDescription>
             {numberOfTransactions} transaction

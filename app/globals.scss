@@ -56,10 +56,25 @@
 body {
   font-family: var(--secondary-font);
   color: #fff;
+  background-color: #000;
 }
 
 .brand {
   color: var(--primary-color);
+}
+
+.action_button {
+  background-color: #fff;
+  font-weight: 600;
+  color: #000;
+  font-size: 1.25rem;
+  padding: 1.75rem 4rem;
+  transition: 300ms ease-in-out;
+  box-shadow: 0 5px 20px 4px rgba(0, 0, 0, 0.2);
+
+  &:hover {
+    opacity: 0.8;
+  }
 }
 
 .bg-grey {
@@ -89,6 +104,37 @@ body {
 
 .fade-in-delayed {
   animation: fade-in 700ms 3s ease-in-out forwards;
+}
+
+.mouse-cursor-gradient-tracking {
+  position: relative;
+  z-index: 1;
+  cursor: pointer;
+  outline: none;
+  overflow: hidden;
+}
+
+.mouse-cursor-gradient-tracking span {
+  position: relative;
+}
+
+.mouse-cursor-gradient-tracking::before {
+  --size: 0;
+  content: "";
+  position: absolute;
+  z-index: -1;
+  left: var(--x);
+  top: var(--y);
+  width: calc(var(--size) * 2);
+  height: calc(var(--size) * 2);
+  background: radial-gradient(circle closest-side, #0b2040, transparent);
+  backdrop-filter: blur(10px);
+  transform: translate(-50%, -50%);
+  transition: width 0.1s ease, height 0.1s ease;
+}
+
+.mouse-cursor-gradient-tracking:hover::before {
+  --size: 220px;
 }
 
 @keyframes fade-in {

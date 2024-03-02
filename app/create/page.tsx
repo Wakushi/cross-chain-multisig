@@ -19,12 +19,7 @@ import CustomToastAction from "@/components/ui/custom-toast-action"
 import CreatePortalForm from "@/components/create-portal-form"
 
 // Constants
-import {
-  PORTALSIG_FACTORY_CONTRACT_ADDRESS,
-  PORTALSIG_FACTORY_CONTRACT_ABI,
-  SEPOLIA_CCIP_ROUTER_CONTRACT_ADDRESS,
-  SEPOLIA_LINK_CONTRACT_ADDRESS,
-} from "@/constants/constants"
+import { PORTALSIG_FACTORY_CONTRACT_ABI } from "@/constants/constants"
 
 // Wagmi
 import { ChainContext, ContractCallType } from "@/services/ChainContext"
@@ -37,7 +32,7 @@ export default function CreatePage() {
   const { address } = useAccount()
   const router = useRouter()
 
-  const { callContract } = useContext(ChainContext)
+  const { callContract, getActiveChainData } = useContext(ChainContext)
   const { getExplorerUrl } = useContext(TransactionContext)
 
   const [ownersAddresses, setOwnersAddresses] = useState<Address[]>([
@@ -122,15 +117,24 @@ export default function CreatePage() {
   async function createPortalSig(): Promise<void> {
     setIsLoading(true)
     try {
+      const portalSigFactoryData = getActiveChainData()
+      if (!portalSigFactoryData) return
+      const {
+        portalFactoryAddress,
+        ccipRouterAddress,
+        linkTokenAddress,
+        chainSelector,
+      } = portalSigFactoryData
       const result = await callContract({
-        contractAddress: PORTALSIG_FACTORY_CONTRACT_ADDRESS,
+        contractAddress: portalFactoryAddress,
         abi: PORTALSIG_FACTORY_CONTRACT_ABI,
         method: "deployPortalSigWallet",
         args: [
           ownersAddresses,
           parseInt(numberOfConfirmation.toString()),
-          SEPOLIA_CCIP_ROUTER_CONTRACT_ADDRESS,
-          SEPOLIA_LINK_CONTRACT_ADDRESS,
+          ccipRouterAddress,
+          linkTokenAddress,
+          chainSelector,
         ],
         type: ContractCallType.WRITE,
       })

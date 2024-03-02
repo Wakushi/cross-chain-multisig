@@ -43,6 +43,7 @@ export default function TransactionContextProvider(
       address: currentPortal.address,
       abi: PORTALSIG_WALLET_CONTRACT_ABI,
       functionName: "getTransactions",
+      chainId: +currentPortal.chain.chainId,
     })
 
     for (let i = 0; i < transactions.length; i++) {
@@ -70,6 +71,7 @@ export default function TransactionContextProvider(
       method: "isConfirmedByAccount",
       args: [transactionId, accountAddress],
       type: ContractCallType.READ,
+      chainId: +portal.chain.chainId,
     })
     return isConfirmed
   }

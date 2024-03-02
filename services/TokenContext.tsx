@@ -1,6 +1,6 @@
-import { createContext, ReactNode, useContext, useState } from "react"
+import { createContext, ReactNode, useContext } from "react"
 import { Address } from "viem"
-import { ethToken, registeredChains, tokenLogos } from "./data/chains"
+import { DestinationChainsData, tokenLogos } from "./data/chains"
 import { Token } from "@/types/Token"
 import {
   Alchemy,
@@ -8,8 +8,10 @@ import {
   TokenBalancesResponseErc20,
   TokenMetadataResponse,
 } from "alchemy-sdk"
-import { fetchBalance, getNetwork } from "@wagmi/core"
+import { fetchBalance } from "@wagmi/core"
 import { PortalContext } from "./PortalContext"
+import { DEFAULT_STALE_TIME, ZERO_ADDRESS } from "@/lib/utils"
+import { useQuery } from "@tanstack/react-query"
 
 export interface ChainSupportedTokens {
   chainId: string
@@ -30,8 +32,13 @@ interface TokenContextProps {
   getAllAddressTokens: (address: Address, network?: Network) => Promise<Token[]>
   getTokenByAddress: (tokenAddress: Address) => Token | null
   getERC20TokenBalance: (account: Address, token: Token) => Promise<any>
-  getAllSupportedTokens: () => Promise<ChainSupportedTokens[]>
-  getAddressTotalBalanceInUSD: (address: Address) => Promise<number>
+  getSupportedTokens: () => Promise<DestinationChainsData[]>
+  getAddressTotalBalanceInUSD: (
+    address: Address,
+    tokens: Token[]
+  ) => Promise<number>
+  portalTokens: Token[] | undefined
+  isLoading: boolean
 }
 
 const TokenContext = createContext<TokenContextProps>({
@@ -44,38 +51,52 @@ const TokenContext = createContext<TokenContextProps>({
   getERC20TokenBalance: async () => {
     return
   },
-  getAllSupportedTokens: async () => {
+  getSupportedTokens: async () => {
     return []
   },
   getAddressTotalBalanceInUSD: async () => {
     return 0
   },
+  portalTokens: undefined,
+  isLoading: false,
 })
 
 export default function TokenContextProvider(props: TokenContextProviderProps) {
   const { currentPortal } = useContext(PortalContext)
-  const { chain } = getNetwork()
-  const [currentPortalTokens, setCurrentPortalTokens] = useState<Token[]>([])
 
-  async function getAllSupportedTokens(): Promise<ChainSupportedTokens[]> {
-    const allSupportedTokensArray: ChainSupportedTokens[] = []
-    for (let registeredChain of registeredChains) {
-      allSupportedTokensArray.push({
-        chainId: registeredChain.chainId,
-        chainSelector: registeredChain.chainSelector,
-        supportedTokens: registeredChain.supportedTokens,
-      })
+  const { data: portalTokens, isLoading } = useQuery<Token[], Error>(
+    ["tokens", currentPortal?.address],
+    () => {
+      if (!currentPortal?.address) {
+        throw new Error("Portal address is undefined")
+      }
+      return getAllAddressTokens(
+        currentPortal.address,
+        currentPortal.chain.alchemyNetwork
+      )
+    },
+    {
+      enabled: !!currentPortal?.address,
+      staleTime: DEFAULT_STALE_TIME,
     }
+  )
 
-    const portalTokens = await getAllAddressTokens(currentPortal!.address)
+  async function getSupportedTokens(): Promise<DestinationChainsData[]> {
+    if (!currentPortal || !portalTokens) return []
+    const supportedTokens: DestinationChainsData[] = [
+      ...currentPortal.chain.destinationChains,
+    ]
 
-    allSupportedTokensArray.map((chainSupportedTokens) => {
-      if (+chainSupportedTokens.chainId === chain?.id) {
-        chainSupportedTokens.supportedTokens = [...portalTokens]
+    supportedTokens?.map((supportedToken: DestinationChainsData) => {
+      if (
+        supportedToken.destinationChainSelector ===
+        currentPortal.chain?.chainSelector
+      ) {
+        supportedToken.tokens = portalTokens
       }
     })
 
-    return allSupportedTokensArray
+    return supportedTokens
   }
 
   async function getAllAddressTokens(
@@ -87,10 +108,27 @@ export default function TokenContextProvider(props: TokenContextProviderProps) {
 
     const addressTokens: Token[] = []
 
-    addressTokens.push({
-      ...ethToken,
-      balance: await getEthBalance(address, alchemy),
-    })
+    const activeChainDestinationData: DestinationChainsData | undefined =
+      currentPortal?.chain?.destinationChains.find(
+        (destinationChain: DestinationChainsData) => {
+          return (
+            destinationChain.destinationChainSelector ===
+            currentPortal.chain?.chainSelector
+          )
+        }
+      )
+
+    if (activeChainDestinationData) {
+      const nativeToken = activeChainDestinationData.tokens.find(
+        (token: Token) => token.address === ZERO_ADDRESS
+      )
+      if (nativeToken) {
+        addressTokens.push({
+          ...nativeToken,
+          balance: await getNativeBalance(address, alchemy),
+        })
+      }
+    }
 
     for (let token of tokenBalances) {
       if (!token.tokenBalance) continue
@@ -120,13 +158,16 @@ export default function TokenContextProvider(props: TokenContextProviderProps) {
     }
 
     for (let token of addressTokens) {
+      const tokenName = token.name.split(" ")[0].toUpperCase()
+      if (tokenName === "WRAPPED" || tokenName === "CCIP-BNM") {
+        continue
+      }
       token.price = await getERC20TokenPrice(token)
       if (token.balance && token.price) {
         token.value = token.price * +token.balance
       }
     }
 
-    setCurrentPortalTokens(addressTokens)
     return addressTokens
   }
 
@@ -151,24 +192,28 @@ export default function TokenContextProvider(props: TokenContextProviderProps) {
     return await alchemyInstance.core.getTokenMetadata(tokenAddress)
   }
 
-  async function getEthBalance(address: Address, alchemyInstance: Alchemy) {
-    const ethBalance = await (
+  async function getNativeBalance(address: Address, alchemyInstance: Alchemy) {
+    const nativeBalance = await (
       await alchemyInstance.core.getBalance(address)
     ).toString()
-    return (+ethBalance / Math.pow(10, 18)).toFixed(4)
+    return (+nativeBalance / Math.pow(10, 18)).toFixed(4)
   }
 
   function getTokenByAddress(tokenAddress: Address): Token | null {
-    const portalToken = currentPortalTokens.find(
+    if (!portalTokens) return null
+    const portalToken = portalTokens.find(
       (token) => token.address.toLowerCase() === tokenAddress.toLowerCase()
     )
     if (portalToken) return portalToken
-    const supportedTokens = registeredChains
-      .map((chain) => chain.supportedTokens)
+    const currentChainDestinationChains =
+      currentPortal?.chain?.destinationChains
+    const token = currentChainDestinationChains
+      ?.map((destinationChain) => destinationChain.tokens)
       .flat()
-    const token = supportedTokens.find(
-      (token) => token.address.toLowerCase() === tokenAddress.toLowerCase()
-    )
+      .find(
+        (token) => token.address.toLowerCase() === tokenAddress.toLowerCase()
+      )
+
     return token || null
   }
 
@@ -189,8 +234,14 @@ export default function TokenContextProvider(props: TokenContextProviderProps) {
 
   async function getERC20TokenPrice(token: Token): Promise<number> {
     const tokenName = token.name.split(" ")[0].toUpperCase()
+    let fetchByAssetName = false
+    if (tokenName === "ETHEREUM" || tokenName === "CHAINLINK") {
+      fetchByAssetName = true
+    }
     return fetch(
-      `https://api.mobula.io/api/1/market/data?asset=${tokenName} `,
+      `https://api.mobula.io/api/1/market/data?${
+        fetchByAssetName ? "asset" : "symbol"
+      }=${tokenName} `,
       {
         method: "GET",
         headers: {
@@ -200,13 +251,13 @@ export default function TokenContextProvider(props: TokenContextProviderProps) {
     )
       .then((response) => response.json())
       .then(({ data }) => data?.price)
-      .catch((err) => console.error(err))
   }
 
   async function getAddressTotalBalanceInUSD(
-    address: Address
+    address: Address,
+    tokens: Token[]
   ): Promise<number> {
-    const tokens = await getAllAddressTokens(address)
+    if (!tokens) return 0
     let total = 0
     for (let token of tokens) {
       if (token.value) {
@@ -220,8 +271,10 @@ export default function TokenContextProvider(props: TokenContextProviderProps) {
     getAllAddressTokens,
     getTokenByAddress,
     getERC20TokenBalance,
-    getAllSupportedTokens,
+    getSupportedTokens,
     getAddressTotalBalanceInUSD,
+    portalTokens,
+    isLoading,
   }
 
   return (

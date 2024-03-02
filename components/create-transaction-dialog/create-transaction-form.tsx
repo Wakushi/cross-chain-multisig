@@ -33,12 +33,16 @@ import { useContext, useEffect, useState } from "react"
 import { Token } from "@/types/Token"
 
 // Services / Utils
-import { ChainSupportedTokens, PayFeesIn } from "@/services/TokenContext"
+import { PayFeesIn, TokenContext } from "@/services/TokenContext"
 import { PortalContext } from "@/services/PortalContext"
-import { registeredChains } from "@/services/data/chains"
+import {
+  Chain,
+  DestinationChainsData,
+  registeredChains,
+} from "@/services/data/chains"
 import { Address } from "viem"
 import Image from "next/image"
-import { getNetwork } from "@wagmi/core"
+import { ChainContext } from "@/services/ChainContext"
 
 interface CreateTransactionFormProps {
   createTransaction: (
@@ -50,7 +54,7 @@ interface CreateTransactionFormProps {
     executesOnRequirementMet: boolean,
     payFeesIn: string
   ) => void
-  allSupportedTokens: ChainSupportedTokens[] | undefined
+  supportedTokens: DestinationChainsData[] | undefined
   isLoading: boolean
   setIsSubmitting: (isSubmitting: boolean) => void
 }
@@ -70,13 +74,13 @@ const formSchema = z.object({
 
 export default function CreateTransactionForm({
   createTransaction,
-  allSupportedTokens,
+  supportedTokens,
   setIsSubmitting,
   isLoading,
 }: CreateTransactionFormProps) {
-  const { chain } = getNetwork()
   const { reset } = useForm()
-  const { isExternalChain } = useContext(PortalContext)
+  const { currentPortal } = useContext(PortalContext)
+  const { getTokenByAddress } = useContext(TokenContext)
 
   const [selectedChain, setSelectedChain] = useState<string>("")
   const [selectedChainSupportedTokens, setSelectedChainSupportedTokens] =
@@ -107,9 +111,9 @@ export default function CreateTransactionForm({
   }, [selectedToken])
 
   function onChainChange() {
-    const chainSupportedTokens = allSupportedTokens?.find(
-      (chain) => chain.chainSelector === selectedChain
-    )?.supportedTokens
+    const chainSupportedTokens = supportedTokens?.find(
+      (chain) => chain.destinationChainSelector === selectedChain
+    )?.tokens
     setSelectedChainSupportedTokens(chainSupportedTokens || [])
   }
 
@@ -126,28 +130,8 @@ export default function CreateTransactionForm({
     )
   }
 
-  function getTokenByAddress(address: Address): Token | null {
-    const currentChainTokens = allSupportedTokens?.find(
-      (registeredChain) => +registeredChain.chainId === chain?.id
-    )?.supportedTokens
-
-    if (currentChainTokens) {
-      const token = currentChainTokens.find(
-        (token) => token.address.toUpperCase() === address.toUpperCase()
-      )
-      if (token) {
-        return token
-      }
-    }
-
-    return (
-      allSupportedTokens
-        ?.map((chain) => chain.supportedTokens)
-        .flat()
-        .find(
-          (token) => token.address.toUpperCase() === address.toUpperCase()
-        ) || null
-    )
+  function isCrossChainTransaction(): boolean {
+    return selectedChain !== currentPortal?.chain.chainSelector
   }
 
   function onSubmit(values: z.infer<typeof formSchema>) {
@@ -266,7 +250,7 @@ export default function CreateTransactionForm({
                     <SelectContent>
                       {selectedChainSupportedTokens.map((supportedToken) => (
                         <SelectItem
-                          key={supportedToken.address}
+                          key={supportedToken.address + supportedToken.name}
                           value={supportedToken.address.toString()}
                         >
                           {supportedToken.name}
@@ -341,8 +325,8 @@ export default function CreateTransactionForm({
               </FormItem>
             )}
           />
-          {/* EXECUTES ON REQUIREMENT */}
-          {isExternalChain(selectedChain) && (
+          {/* PAY XCHAIN FEES IN */}
+          {isCrossChainTransaction() && (
             <FormField
               control={form.control}
               name="payFeesIn"

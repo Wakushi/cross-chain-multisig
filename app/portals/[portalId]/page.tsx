@@ -1,5 +1,4 @@
 "use client"
-
 // Components
 import { Card } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -11,32 +10,14 @@ import TokenDoughnutChart from "@/components/doughnut-chart"
 import { PortalContext } from "@/services/PortalContext"
 import { TokenContext } from "@/services/TokenContext"
 
-// Types
-import { Token } from "@/types/Token"
-
 // React
-import { useQuery } from "@tanstack/react-query"
 import { useContext } from "react"
 
 export default function DashboardPage() {
-  const { getAllAddressTokens } = useContext(TokenContext)
-  const { currentPortal } = useContext(PortalContext)
-
-  const { data: tokens, isLoading } = useQuery<Token[], Error>(
-    ["tokens", currentPortal?.address],
-    () => {
-      if (!currentPortal?.address) {
-        throw new Error("Portal address is undefined")
-      }
-      return getAllAddressTokens(currentPortal.address)
-    },
-    {
-      enabled: !!currentPortal?.address,
-    }
-  )
+  const { portalTokens, isLoading } = useContext(TokenContext)
 
   function hasToken(): boolean {
-    const hasToken = tokens?.find(
+    const hasToken = portalTokens?.find(
       (token) => token.balance && +token.balance > 0
     )
     return !!hasToken
@@ -50,7 +31,7 @@ export default function DashboardPage() {
     )
   }
 
-  if (!tokens || !tokens.length) {
+  if (!portalTokens || !portalTokens.length) {
     return (
       <div className="min-h-[800px] flex items-center justify-center fade-in">
         <div className="flex flex-col gap-5 justify-center items-center">
@@ -65,7 +46,7 @@ export default function DashboardPage() {
       {hasToken() && (
         <div className="flex items-center gap-4">
           <Card className=" h-[235px]">
-            <TokenDoughnutChart tokens={tokens} />
+            <TokenDoughnutChart tokens={portalTokens} />
           </Card>
         </div>
       )}
@@ -80,7 +61,7 @@ export default function DashboardPage() {
             </TabsTrigger>
           </TabsList>
           <TabsContent value="tokens" className="p-4">
-            <TokenList tokens={tokens} />
+            <TokenList tokens={portalTokens} />
           </TabsContent>
           <TabsContent value="collectibles" className="p-4">
             <div className="flex items-center justify-center">

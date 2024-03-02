@@ -22,37 +22,44 @@ import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { Address, parseUnits } from "viem"
 
 // Services & Utils
-import { ChainSupportedTokens, TokenContext } from "@/services/TokenContext"
-import { PORTALSIG_WALLET_CONTRACT_ABI } from "@/constants/constants"
+import { PayFeesIn, TokenContext } from "@/services/TokenContext"
+import {
+  PORTALGATE_CONTRACT_ABI,
+  PORTALSIG_WALLET_CONTRACT_ABI,
+} from "@/constants/constants"
 import { PortalContext } from "@/services/PortalContext"
 import { TransactionContext } from "@/services/TransactionsContext"
 import { ChainContext, ContractCallType } from "@/services/ChainContext"
+import { Chain, DestinationChainsData } from "@/services/data/chains"
+import { DEFAULT_STALE_TIME } from "@/lib/utils"
 
 export default function CreateTransactionDialog() {
   const { toast } = useToast()
   const queryClient = useQueryClient()
 
-  const { getTokenByAddress, getAllSupportedTokens } = useContext(TokenContext)
-  const { currentPortal, isExternalChain } = useContext(PortalContext)
+  const { getTokenByAddress, getSupportedTokens } = useContext(TokenContext)
+  const { currentPortal } = useContext(PortalContext)
   const { getExplorerUrl } = useContext(TransactionContext)
-  const { callContract } = useContext(ChainContext)
+  const { callContract, getActiveChainData } = useContext(ChainContext)
 
   const [open, setOpen] = useState<boolean>(false)
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false)
+  const chain: Chain | null = getActiveChainData()
 
-  const { data: allSupportedTokens, isLoading } = useQuery<
-    ChainSupportedTokens[],
+  const { data: supportedTokens, isLoading } = useQuery<
+    DestinationChainsData[],
     Error
   >(
-    ["allSupportedTokens", currentPortal?.address],
+    ["supportedTokens", currentPortal?.address],
     () => {
       if (!currentPortal?.address) {
         throw new Error("Portal address is undefined")
       }
-      return getAllSupportedTokens()
+      return getSupportedTokens()
     },
     {
       enabled: !!currentPortal?.address,
+      staleTime: DEFAULT_STALE_TIME,
     }
   )
 
@@ -67,26 +74,46 @@ export default function CreateTransactionDialog() {
   ): Promise<void> {
     if (!currentPortal) return
     try {
-      destinationChainSelector = isExternalChain(destinationChainSelector)
-        ? destinationChainSelector
-        : "0"
       const tokenSent = getTokenByAddress(token)
-      const result = await callContract({
-        contractAddress: currentPortal.address,
-        abi: PORTALSIG_WALLET_CONTRACT_ABI,
-        method: "createTransaction",
-        args: [
-          destination,
-          token,
-          destinationChainSelector,
-          parseUnits(amount, tokenSent?.decimals ?? 18),
-          data,
-          executesOnRequirementMet,
-          payFeesIn,
-          0,
-        ],
-        type: ContractCallType.WRITE,
-      })
+      let result
+      if (chain && chain.chainId !== currentPortal.chain.chainId) {
+        result = await callContract({
+          contractAddress: chain.portalGateAddress,
+          abi: PORTALGATE_CONTRACT_ABI,
+          method: "createTransaction",
+          args: [
+            currentPortal.address,
+            currentPortal.chain.chainSelector,
+            destination,
+            token,
+            destinationChainSelector,
+            parseUnits(amount, tokenSent?.decimals ?? 18),
+            data,
+            executesOnRequirementMet,
+            payFeesIn,
+            0,
+            PayFeesIn.LINK,
+          ],
+          type: ContractCallType.WRITE,
+        })
+      } else {
+        result = await callContract({
+          contractAddress: currentPortal.address,
+          abi: PORTALSIG_WALLET_CONTRACT_ABI,
+          method: "createTransaction",
+          args: [
+            destination,
+            token,
+            destinationChainSelector,
+            parseUnits(amount, tokenSent?.decimals ?? 18),
+            data,
+            executesOnRequirementMet,
+            payFeesIn,
+            0,
+          ],
+          type: ContractCallType.WRITE,
+        })
+      }
       queryClient.invalidateQueries(["transactions", currentPortal?.address])
       toast({
         title: "Transaction created !",
@@ -131,7 +158,7 @@ export default function CreateTransactionDialog() {
             </DialogHeader>
             <CreateTransactionForm
               createTransaction={createTransaction}
-              allSupportedTokens={allSupportedTokens}
+              supportedTokens={supportedTokens}
               isLoading={isLoading}
               setIsSubmitting={setIsSubmitting}
             />

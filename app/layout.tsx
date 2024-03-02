@@ -12,7 +12,7 @@ import {
 
 // Wagmi
 import { configureChains, createConfig, WagmiConfig } from "wagmi"
-import { sepolia } from "wagmi/chains"
+import { polygonMumbai, sepolia } from "wagmi/chains"
 import { alchemyProvider } from "@wagmi/core/providers/alchemy"
 
 // React
@@ -40,7 +40,7 @@ import { Layout } from "@/components/layout/layout"
 const queryClient = new QueryClient()
 
 const { chains, publicClient } = configureChains(
-  [sepolia],
+  [sepolia, polygonMumbai],
   [alchemyProvider({ apiKey: process.env.NEXT_PUBLIC_ALCHEMY_API_KEY ?? "" })]
 )
 

@@ -7,7 +7,7 @@ import Copy from "@/components/ui/copy/copy"
 // Services / Utils
 import { PortalContext } from "@/services/PortalContext"
 import { usePathname } from "next/navigation"
-import { getShortenedAddress } from "@/lib/utils"
+import { DEFAULT_STALE_TIME, getShortenedAddress } from "@/lib/utils"
 import { ReactNode, useContext, useEffect } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { Address } from "viem"
@@ -23,6 +23,8 @@ import {
 } from "@fortawesome/free-solid-svg-icons"
 import { TokenContext } from "@/services/TokenContext"
 import LoaderSmall from "@/components/ui/loader-small/loader-small"
+import TooltipWrapper from "@/components/ui/custom-tooltip"
+import Image from "next/image"
 
 interface PortalPageLayoutProps {
   children: ReactNode
@@ -34,23 +36,27 @@ export default function PortalPageLayout({
   children,
 }: PortalPageLayoutProps) {
   const pathname = usePathname()
-  const { setCurrentPortalByAddress } = useContext(PortalContext)
-  const { getAddressTotalBalanceInUSD } = useContext(TokenContext)
+  const { setCurrentPortalByAddress, currentPortal, portals } =
+    useContext(PortalContext)
+  const { getAddressTotalBalanceInUSD, portalTokens } = useContext(TokenContext)
 
   useEffect(() => {
     setCurrentPortalByAddress(params.portalId)
-  }, [params.portalId])
+  }, [params.portalId, portals])
 
   const { data: balance, isLoading } = useQuery<number, Error>(
-    ["balance", params.portalId],
+    ["balance", params.portalId, portalTokens],
     () => {
-      if (!params.portalId) {
-        throw new Error("Portal address is undefined")
+      if (!params.portalId || !portalTokens) {
+        throw new Error(
+          "Portal address is undefined or portal tokens are empty"
+        )
       }
-      return getAddressTotalBalanceInUSD(params.portalId)
+      return getAddressTotalBalanceInUSD(params.portalId, portalTokens)
     },
     {
-      enabled: !!params.portalId,
+      enabled: !!params.portalId && !!portals && !!portalTokens,
+      staleTime: DEFAULT_STALE_TIME,
     }
   )
 
@@ -67,11 +73,10 @@ export default function PortalPageLayout({
           <LoaderSmall />
         </div>
       )
-    }
-    if (balance !== undefined) {
+    } else {
       return (
         <span className="font-light text-3xl">
-          {balance.toFixed(2) || "0.00"}
+          {balance?.toFixed(2) || "0.00"}
         </span>
       )
     }
@@ -93,6 +98,19 @@ export default function PortalPageLayout({
                 {getShortenedAddress(params.portalId)}
               </p>
               <Copy contentToCopy={params.portalId} />
+              {currentPortal && (
+                <TooltipWrapper
+                  side="left"
+                  message={`Portal deployed on ${currentPortal.chain.name}`}
+                >
+                  <Image
+                    src={currentPortal.chain.icon}
+                    alt={`${currentPortal.chain.name} icon`}
+                    width={40}
+                    height={40}
+                  />
+                </TooltipWrapper>
+              )}
             </div>
           </div>
           {/* NAVIGATION */}
@@ -142,7 +160,7 @@ export default function PortalPageLayout({
           </div>
         </div>
         <CardContent className="p-6 pt-20 w-full overflow-scroll min-h-screen">
-          <Card className="w-full h-fit">{children} </Card>
+          <div className="w-full h-fit">{children} </div>
         </CardContent>
       </Card>
     </div>

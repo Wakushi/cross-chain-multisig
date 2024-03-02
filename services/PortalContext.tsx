@@ -1,5 +1,5 @@
 // React
-import { createContext, ReactNode, useState } from "react"
+import { createContext, ReactNode, useContext, useState } from "react"
 // Types
 import { Portal } from "@/types/Portal"
 // Wagmi / Viem
@@ -10,10 +10,11 @@ import { useAccount } from "wagmi"
 // Utils
 import {
   PORTALSIG_FACTORY_CONTRACT_ABI,
-  PORTALSIG_FACTORY_CONTRACT_ADDRESS,
   PORTALSIG_WALLET_CONTRACT_ABI,
 } from "@/constants/constants"
 import { Chain, registeredChains } from "./data/chains"
+import { useQuery } from "@tanstack/react-query"
+import { DEFAULT_STALE_TIME } from "@/lib/utils"
 
 interface PortalContextProviderProps {
   children: ReactNode
@@ -21,20 +22,22 @@ interface PortalContextProviderProps {
 
 interface PortalContextProps {
   currentPortal: Portal | null
-  getPortal: (portalAddress: Address) => Promise<Portal>
   isExternalChain: (chainSelector: string) => boolean
-  getPortalETHBalance: (portalAddress: Address) => Promise<string>
+  getPortalNativeBalance: (portalAddress: Address) => Promise<string>
   getAllPortals: () => Promise<Portal[]>
   setCurrentPortalByAddress: (portalAddress: Address) => Promise<void>
+  portals: Portal[] | undefined
+  isLoading: boolean
 }
 
 const PortalContext = createContext<PortalContextProps>({
   currentPortal: null,
-  getPortal: (portalAddress: Address) => Promise.resolve({} as Portal),
   isExternalChain: (chainSelector: string) => false,
-  getPortalETHBalance: (portalAddress: Address) => Promise.resolve(""),
+  getPortalNativeBalance: (portalAddress: Address) => Promise.resolve(""),
   getAllPortals: () => Promise.resolve([]),
   setCurrentPortalByAddress: (portalAddress: Address) => Promise.resolve(),
+  portals: undefined,
+  isLoading: false,
 })
 export default function PortalContextProvider(
   props: PortalContextProviderProps
@@ -43,13 +46,76 @@ export default function PortalContextProvider(
   const { chain } = getNetwork()
   const [currentPortal, setCurrentPortal] = useState<Portal | null>(null)
 
-  async function getPortal(portalAddress: Address): Promise<Portal> {
-    const owners = await getPortalOwners(portalAddress)
-    const balance = await getPortalETHBalance(portalAddress)
-    const transactionsCount = await getTransactionsCount(portalAddress)
-    const requiredConfirmationsAmount = await getRequiredConfirmationsAmount(
+  const { data: portals, isLoading } = useQuery<Portal[], Error>(
+    ["portals"],
+    () => {
+      return getAllPortals()
+    },
+    {
+      staleTime: DEFAULT_STALE_TIME,
+    }
+  )
+
+  async function getAllPortals(): Promise<Portal[]> {
+    const portals: Portal[] = []
+    for (let chainPortals of await getPortalAddressesByChainId()) {
+      const chainId = chainPortals[0]
+      const portalAddresses = chainPortals[1]
+      for (let portalAddress of portalAddresses) {
+        const portal = await getPortal(chainId, portalAddress)
+        portals.push(portal)
+      }
+    }
+    return portals
+  }
+
+  async function getPortalAddressesByChainId(): Promise<Map<number, any[]>> {
+    const portalsAddressesByChain: any = new Map<number, any[]>()
+    for (let registeredChain of registeredChains) {
+      const chainId = +registeredChain.chainId
+      const chainPortalsAddresses: any = await readContract({
+        address: registeredChain.portalFactoryAddress,
+        abi: PORTALSIG_FACTORY_CONTRACT_ABI,
+        functionName: "getWalletsByOwner",
+        args: [address],
+        chainId,
+      })
+      if (portalsAddressesByChain.has(chainId)) {
+        portalsAddressesByChain.set(chainId, [
+          ...portalsAddressesByChain.get(chainId),
+          ...chainPortalsAddresses,
+        ])
+      } else {
+        portalsAddressesByChain.set(chainId, chainPortalsAddresses)
+      }
+    }
+    return portalsAddressesByChain
+  }
+
+  async function getPortal(
+    portalChainId: number,
+    portalAddress: Address
+  ): Promise<Portal> {
+    const owners = await getPortalOwners(portalChainId, portalAddress)
+    const balance = await getPortalNativeBalance(portalAddress)
+    const transactionsCount = await getTransactionsCount(
+      portalChainId,
       portalAddress
     )
+    const requiredConfirmationsAmount = await getRequiredConfirmationsAmount(
+      portalChainId,
+      portalAddress
+    )
+    const portalChainSelector = await getPortalChainSelector(
+      portalChainId,
+      portalAddress
+    )
+    const chain = registeredChains.find(
+      (registeredChain) => registeredChain.chainSelector === portalChainSelector
+    )
+
+    if (!chain) throw new Error("Chain not found")
+
     return {
       address: portalAddress,
       owners: owners,
@@ -57,69 +123,77 @@ export default function PortalContextProvider(
       numberOfTransactions: transactionsCount,
       requiredConfirmationsAmount: requiredConfirmationsAmount,
       lastTransaction: 0,
+      chain,
     }
   }
 
   async function setCurrentPortalByAddress(
     portalAddress: Address
   ): Promise<void> {
-    const portal = await getPortal(portalAddress)
-    setCurrentPortal(portal)
+    if (!portals) return
+    const portal = portals.find((portal) => portal.address === portalAddress)
+    if (portal) setCurrentPortal(portal)
   }
 
-  async function getAllPortals(): Promise<Portal[]> {
-    const portals: Portal[] = []
-    for (let portalAddress of await getPortalAddresses()) {
-      const portal = await getPortal(portalAddress)
-      portals.push(portal)
-    }
-    return portals
-  }
-
-  async function getPortalAddresses(): Promise<Address[]> {
-    const portalsAddresses: any = await readContract({
-      address: PORTALSIG_FACTORY_CONTRACT_ADDRESS,
-      abi: PORTALSIG_FACTORY_CONTRACT_ABI,
-      functionName: "getWalletsByOwner",
-      args: [address],
-    })
-    return portalsAddresses
-  }
-
-  async function getPortalOwners(portalAddress: Address): Promise<Address[]> {
+  async function getPortalOwners(
+    portalChainId: number,
+    portalAddress: Address
+  ): Promise<Address[]> {
     const owners: any = await readContract({
       address: portalAddress,
       abi: PORTALSIG_WALLET_CONTRACT_ABI,
       functionName: "getOwners",
+      chainId: portalChainId,
     })
     return owners
   }
 
-  async function getPortalETHBalance(portalAddress: Address): Promise<string> {
+  async function getPortalNativeBalance(
+    portalAddress: Address
+  ): Promise<string> {
     const balance: any = await fetchBalance({
       address: portalAddress,
     })
     return balance?.formatted
   }
 
-  async function getTransactionsCount(portalAddress: Address): Promise<string> {
+  async function getTransactionsCount(
+    portalChainId: number,
+    portalAddress: Address
+  ): Promise<string> {
     const transactionCount: any = await readContract({
       address: portalAddress,
       abi: PORTALSIG_WALLET_CONTRACT_ABI,
       functionName: "getTransactionCount",
+      chainId: portalChainId,
     })
     return transactionCount.toString()
   }
 
   async function getRequiredConfirmationsAmount(
+    portalChainId: number,
     portalAddress: Address
   ): Promise<string> {
     const requiredConfirmationsAmount: any = await readContract({
       address: portalAddress,
       abi: PORTALSIG_WALLET_CONTRACT_ABI,
       functionName: "getRequiredConfirmationsAmount",
+      chainId: portalChainId,
     })
     return requiredConfirmationsAmount.toString()
+  }
+
+  async function getPortalChainSelector(
+    portalChainId: number,
+    portalAddress: Address
+  ): Promise<string> {
+    const portalChainSelector: any = await readContract({
+      address: portalAddress,
+      abi: PORTALSIG_WALLET_CONTRACT_ABI,
+      functionName: "getPortalChainSelector",
+      chainId: portalChainId,
+    })
+    return portalChainSelector.toString()
   }
 
   function getPortalChain(): Chain | undefined {
@@ -136,11 +210,12 @@ export default function PortalContextProvider(
 
   const context = {
     currentPortal,
-    getPortal,
     getAllPortals,
     isExternalChain,
-    getPortalETHBalance,
+    getPortalNativeBalance,
     setCurrentPortalByAddress,
+    portals,
+    isLoading,
   }
 
   return (

@@ -14,11 +14,6 @@ interface ChainContextProviderProps {
   children: ReactNode
 }
 
-interface ChainContextProps {
-  callContract: (params: ContractCallParams) => Promise<any>
-  getChainBySelector: (chainSelector: string) => Chain | null
-}
-
 export enum ContractCallType {
   READ = "READ",
   WRITE = "WRITE",
@@ -30,11 +25,19 @@ export interface ContractCallParams {
   method: string
   args: any[]
   type: ContractCallType
+  chainId?: number
+}
+
+interface ChainContextProps {
+  callContract: (params: ContractCallParams) => Promise<any>
+  getChainBySelector: (chainSelector: string) => Chain | null
+  getActiveChainData: () => Chain | null
 }
 
 const ChainContext = createContext<ChainContextProps>({
   callContract: async () => {},
   getChainBySelector: () => null,
+  getActiveChainData: () => null,
 })
 
 export default function ChainContextProvider(props: ChainContextProviderProps) {
@@ -46,12 +49,18 @@ export default function ChainContextProvider(props: ChainContextProviderProps) {
     method,
     args,
     type,
+    chainId,
   }: ContractCallParams): Promise<any> {
     const payload = {
       address: contractAddress,
       abi,
       functionName: method,
       args,
+      chainId: chainId || chain?.id,
+    }
+
+    if (chainId) {
+      payload.chainId = chainId
     }
 
     if (type === ContractCallType.READ) {
@@ -68,22 +77,24 @@ export default function ChainContextProvider(props: ChainContextProviderProps) {
   }
 
   function getChainBySelector(chainSelector: string): Chain | null {
-    if (chainSelector === "0" && chain) {
-      return (
-        registeredChains.find(
-          (registeredChain) => +registeredChain.chainId === chain.id
-        ) || null
-      )
-    }
     return (
       registeredChains.find((chain) => chain.chainSelector === chainSelector) ||
       null
     )
   }
 
+  function getActiveChainData(): Chain | null {
+    if (!chain) return null
+    const factory = registeredChains.find(
+      (registeredChain) => +registeredChain.chainId === chain.id
+    )
+    return factory || null
+  }
+
   const context = {
     callContract,
     getChainBySelector,
+    getActiveChainData,
   }
 
   return (

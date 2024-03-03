@@ -8,6 +8,7 @@ interface MenuLinkProps {
   isActive: boolean
   children: ReactNode
   icon: IconDefinition
+  onClick?: () => void
 }
 
 export default function MenuLink({
@@ -15,6 +16,7 @@ export default function MenuLink({
   isActive,
   children,
   icon,
+  onClick,
 }: MenuLinkProps) {
   return (
     <Link
@@ -22,6 +24,7 @@ export default function MenuLink({
       className={`flex items-center gap-6 p-4 hover:bg-sky-900 ${
         isActive ? "link-active" : ""
       }`}
+      onClick={onClick}
     >
       <FontAwesomeIcon className="icon text-slate-400" icon={icon} />{" "}
       <span className="font-light text-sm text-slate-400">{children}</span>

@@ -13,7 +13,7 @@ import { Address } from "viem"
 
 // React
 import { ReactNode, useContext, useEffect } from "react"
-import { useQuery } from "@tanstack/react-query"
+import { useQuery, useQueryClient } from "@tanstack/react-query"
 import Image from "next/image"
 
 // Assets
@@ -38,6 +38,7 @@ export default function PortalPageLayout({
   children,
 }: PortalPageLayoutProps) {
   const pathname = usePathname()
+  const queryClient = useQueryClient()
   const { setCurrentPortalByAddress, currentPortal, portals } =
     useContext(PortalContext)
   const { getAddressTotalBalanceInUSD, portalTokens } = useContext(TokenContext)
@@ -121,6 +122,7 @@ export default function PortalPageLayout({
               href="/portals"
               isActive={false}
               icon={faCircleChevronLeft}
+              onClick={() => queryClient.invalidateQueries(["portals"])}
             >
               Back to Portal list
             </MenuLink>

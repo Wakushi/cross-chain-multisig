@@ -2,6 +2,7 @@
 // React
 import { useContext, useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
+import { useQueryClient } from "@tanstack/react-query"
 
 // Components
 import { Button } from "@/components/ui/button"
@@ -32,6 +33,7 @@ import { TransactionContext } from "@/services/TransactionsContext"
 export default function CreatePage() {
   const { toast } = useToast()
   const { address } = useAccount()
+  const queryClient = useQueryClient()
   const router = useRouter()
 
   const { callContract, getActiveChainData } = useContext(ChainContext)
@@ -140,6 +142,7 @@ export default function CreatePage() {
         ],
         type: ContractCallType.WRITE,
       })
+      queryClient.invalidateQueries(["portals"])
       toast({
         title: "Wallet created !",
         description: "See on block explorer",

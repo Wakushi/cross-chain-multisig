@@ -4,10 +4,10 @@ import { PortalCardView } from "@/types/PortalCardProps"
 
 export default function PortalList({ portals }: { portals: Portal[] }) {
   return (
-    <div className="flex items-center justify-center flex-wrap gap-5">
+    <div className="flex items-center justify-center flex-wrap gap-5 pt-[5rem]">
       {portals?.map((portal: Portal) => (
         <PortalCard
-          key={portal.address}
+          key={portal.address + portal.chain.name}
           portal={portal}
           view={PortalCardView.SMALL}
         />

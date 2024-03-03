@@ -6,11 +6,15 @@ import Copy from "@/components/ui/copy/copy"
 
 // Services / Utils
 import { PortalContext } from "@/services/PortalContext"
-import { usePathname } from "next/navigation"
+import { TokenContext } from "@/services/TokenContext"
 import { DEFAULT_STALE_TIME, getShortenedAddress } from "@/lib/utils"
+import { usePathname } from "next/navigation"
+import { Address } from "viem"
+
+// React
 import { ReactNode, useContext, useEffect } from "react"
 import { useQuery } from "@tanstack/react-query"
-import { Address } from "viem"
+import Image from "next/image"
 
 // Assets
 import {
@@ -21,10 +25,8 @@ import {
   faPiggyBank,
   faRightLeft,
 } from "@fortawesome/free-solid-svg-icons"
-import { TokenContext } from "@/services/TokenContext"
 import LoaderSmall from "@/components/ui/loader-small/loader-small"
 import TooltipWrapper from "@/components/ui/custom-tooltip"
-import Image from "next/image"
 
 interface PortalPageLayoutProps {
   children: ReactNode

@@ -7,7 +7,6 @@ import TokenList from "@/components/token-list"
 import TokenDoughnutChart from "@/components/doughnut-chart"
 
 // Services
-import { PortalContext } from "@/services/PortalContext"
 import { TokenContext } from "@/services/TokenContext"
 
 // React

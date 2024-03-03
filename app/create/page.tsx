@@ -22,9 +22,11 @@ import CreatePortalForm from "@/components/create-portal-form"
 import { PORTALSIG_FACTORY_CONTRACT_ABI } from "@/constants/constants"
 
 // Wagmi
-import { ChainContext, ContractCallType } from "@/services/ChainContext"
 import { Address, isAddress } from "viem"
 import { useAccount } from "wagmi"
+
+// Service
+import { ChainContext, ContractCallType } from "@/services/ChainContext"
 import { TransactionContext } from "@/services/TransactionsContext"
 
 export default function CreatePage() {

@@ -3,13 +3,16 @@
 // Components
 import TransactionList from "@/components/transaction-list"
 import LoaderHive from "@/components/ui/loader-hive/loader-hive"
+
 // Services & Utils
 import { PortalContext } from "@/services/PortalContext"
 import { TransactionContext } from "@/services/TransactionsContext"
+
 // React
 import { useContext } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { Transaction } from "@/types/Transaction"
+import { Card } from "@/components/ui/card"
 
 export default function TransactionsPage() {
   const { currentPortal } = useContext(PortalContext)
@@ -46,5 +49,9 @@ export default function TransactionsPage() {
     )
   }
 
-  return <TransactionList transactions={transactions} />
+  return (
+    <Card>
+      <TransactionList transactions={transactions} />
+    </Card>
+  )
 }

@@ -1,7 +1,6 @@
 "use client"
 // React
 import { useContext } from "react"
-import { useQuery } from "@tanstack/react-query"
 
 // Services
 import { PortalContext } from "@/services/PortalContext"

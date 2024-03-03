@@ -9,6 +9,8 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import Copy from "../ui/copy/copy"
+import CreateTransactionDialog from "../create-transaction-dialog/create-transaction-dialog"
+import TooltipWrapper from "../ui/custom-tooltip"
 // Utils
 import { getShortenedAddress } from "@/lib/utils"
 import { Address } from "viem"
@@ -18,14 +20,12 @@ import ethIcon from "../../assets/icons/ethereum.svg"
 // Types
 import { PortalCardProps, PortalCardView } from "@/types/PortalCardProps"
 // Next / React
-import Image from "next/image"
+import { useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
-import CreateTransactionDialog from "../create-transaction-dialog/create-transaction-dialog"
+import Image from "next/image"
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
 import { faWallet } from "@fortawesome/free-solid-svg-icons"
 import vectorImg from "@/assets/images/vector.png"
-import TooltipWrapper from "../ui/custom-tooltip"
-import { useEffect, useRef } from "react"
 
 export default function PortalCard({ portal, view }: PortalCardProps) {
   const { address, owners, balance, numberOfTransactions, chain } = portal
@@ -77,7 +77,7 @@ export default function PortalCard({ portal, view }: PortalCardProps) {
           >
             <div>
               {getShortenedAddress(address)}
-              <Copy contentToCopy={address} />
+              <Copy tooltipPosition="bottom" contentToCopy={address} />
             </div>
             <div className="flex items-center gap-1">
               <TooltipWrapper
@@ -107,7 +107,7 @@ export default function PortalCard({ portal, view }: PortalCardProps) {
           <ul className={classes.owner_list}>
             {owners?.map((owner: Address) => (
               <li key={owner}>
-                {owner} <Copy contentToCopy={owner} />
+                {owner} <Copy contentToCopy={owner} tooltipPosition="left" />
               </li>
             ))}
           </ul>
@@ -115,7 +115,12 @@ export default function PortalCard({ portal, view }: PortalCardProps) {
         <CardFooter className="flex justify-between items-center">
           <div className="flex items-center">
             <p>{Number(balance).toFixed(4)} </p>
-            <Image src={ethIcon} alt="Ethereum logo" width={30} height={30} />
+            <Image
+              src={chain.icon}
+              alt="Ethereum logo"
+              width={30}
+              height={30}
+            />
           </div>
           {isDetailedView() && <CreateTransactionDialog />}
         </CardFooter>

@@ -23,7 +23,6 @@ interface PortalContextProviderProps {
 interface PortalContextProps {
   currentPortal: Portal | null
   isExternalChain: (chainSelector: string) => boolean
-  getPortalNativeBalance: (portalAddress: Address) => Promise<string>
   getAllPortals: () => Promise<Portal[]>
   setCurrentPortalByAddress: (portalAddress: Address) => Promise<void>
   portals: Portal[] | undefined
@@ -33,7 +32,6 @@ interface PortalContextProps {
 const PortalContext = createContext<PortalContextProps>({
   currentPortal: null,
   isExternalChain: (chainSelector: string) => false,
-  getPortalNativeBalance: (portalAddress: Address) => Promise.resolve(""),
   getAllPortals: () => Promise.resolve([]),
   setCurrentPortalByAddress: (portalAddress: Address) => Promise.resolve(),
   portals: undefined,
@@ -97,7 +95,7 @@ export default function PortalContextProvider(
     portalAddress: Address
   ): Promise<Portal> {
     const owners = await getPortalOwners(portalChainId, portalAddress)
-    const balance = await getPortalNativeBalance(portalAddress)
+    const balance = await getPortalNativeBalance(portalChainId, portalAddress)
     const transactionsCount = await getTransactionsCount(
       portalChainId,
       portalAddress
@@ -149,10 +147,12 @@ export default function PortalContextProvider(
   }
 
   async function getPortalNativeBalance(
+    portalChainId: number,
     portalAddress: Address
   ): Promise<string> {
     const balance: any = await fetchBalance({
       address: portalAddress,
+      chainId: portalChainId,
     })
     return balance?.formatted
   }
@@ -212,7 +212,6 @@ export default function PortalContextProvider(
     currentPortal,
     getAllPortals,
     isExternalChain,
-    getPortalNativeBalance,
     setCurrentPortalByAddress,
     portals,
     isLoading,

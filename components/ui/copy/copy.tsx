@@ -6,9 +6,10 @@ import TooltipWrapper from "../custom-tooltip"
 
 interface CopyProps {
   contentToCopy: string
+  tooltipPosition?: "top" | "bottom" | "left" | "right"
 }
 
-export default function Copy({ contentToCopy }: CopyProps) {
+export default function Copy({ contentToCopy, tooltipPosition }: CopyProps) {
   const { toast } = useToast()
 
   function copyToClipboard(e: any) {
@@ -20,7 +21,7 @@ export default function Copy({ contentToCopy }: CopyProps) {
   }
 
   return (
-    <TooltipWrapper message="Copy to clipboard">
+    <TooltipWrapper side={tooltipPosition} message="Copy to clipboard">
       <FontAwesomeIcon
         className={classes.copy_icon}
         icon={faCopy}

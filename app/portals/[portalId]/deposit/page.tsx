@@ -1,9 +1,14 @@
 "use client"
 
+// Components
 import Copy from "@/components/ui/copy/copy"
 import LoaderHive from "@/components/ui/loader-hive/loader-hive"
+
+// Service
 import { PortalContext } from "@/services/PortalContext"
 import { Chain, registeredChains } from "@/services/data/chains"
+
+// React
 import Image from "next/image"
 import { useContext } from "react"
 

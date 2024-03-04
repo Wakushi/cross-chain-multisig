@@ -6,8 +6,8 @@ import {
   writeContract,
   waitForTransaction,
   readContract,
-  getNetwork,
 } from "@wagmi/core"
+import { useNetwork } from "wagmi"
 import { Chain, registeredChains } from "@/services/data/chains"
 
 interface ChainContextProviderProps {
@@ -41,7 +41,7 @@ const ChainContext = createContext<ChainContextProps>({
 })
 
 export default function ChainContextProvider(props: ChainContextProviderProps) {
-  const { chain } = getNetwork()
+  const { chain } = useNetwork()
 
   async function callContract({
     contractAddress,

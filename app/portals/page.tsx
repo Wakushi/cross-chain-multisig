@@ -36,7 +36,7 @@ export default function PortalsPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center fade-in">
+    <div className="min-h-screen flex items-baseline justify-center fade-in">
       <PortalList portals={portals} />
     </div>
   )

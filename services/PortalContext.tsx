@@ -12,9 +12,10 @@ import {
   PORTALSIG_FACTORY_CONTRACT_ABI,
   PORTALSIG_WALLET_CONTRACT_ABI,
 } from "@/constants/constants"
-import { Chain, registeredChains } from "./data/chains"
+import { Chain, DestinationChainsData, registeredChains } from "./data/chains"
 import { useQuery } from "@tanstack/react-query"
 import { DEFAULT_STALE_TIME } from "@/lib/utils"
+import { ChainContext } from "./ChainContext"
 
 interface PortalContextProviderProps {
   children: ReactNode
@@ -41,11 +42,13 @@ export default function PortalContextProvider(
   props: PortalContextProviderProps
 ) {
   const { address } = useAccount()
-  const { chain } = getNetwork()
+  const { getActiveChainData } = useContext(ChainContext)
+
   const [currentPortal, setCurrentPortal] = useState<Portal | null>(null)
+  const activeChain: Chain | null = getActiveChainData()
 
   const { data: portals, isLoading } = useQuery<Portal[], Error>(
-    ["portals"],
+    ["portals", activeChain?.chainId],
     () => {
       return getAllPortals()
     },
@@ -69,7 +72,9 @@ export default function PortalContextProvider(
 
   async function getPortalAddressesByChainId(): Promise<Map<number, any[]>> {
     const portalsAddressesByChain: any = new Map<number, any[]>()
+
     for (let registeredChain of registeredChains) {
+      if (!isChainSupported(registeredChain)) continue
       const chainId = +registeredChain.chainId
       const chainPortalsAddresses: any = await readContract({
         address: registeredChain.portalFactoryAddress,
@@ -198,7 +203,15 @@ export default function PortalContextProvider(
 
   function getPortalChain(): Chain | undefined {
     return registeredChains.find(
-      (registeredChain) => +registeredChain.chainId === chain?.id
+      (registeredChain) => registeredChain.chainId === activeChain?.chainId
+    )
+  }
+
+  function isChainSupported(chain: Chain): boolean {
+    return !!activeChain?.destinationChains.find(
+      (destinationChain: DestinationChainsData) => {
+        return destinationChain.destinationChainSelector === chain.chainSelector
+      }
     )
   }
 

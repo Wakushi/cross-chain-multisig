@@ -16,7 +16,6 @@ import { getShortenedAddress } from "@/lib/utils"
 import { Address } from "viem"
 // Styles / Assets
 import classes from "./portal-card.module.scss"
-import ethIcon from "../../assets/icons/ethereum.svg"
 // Types
 import { PortalCardProps, PortalCardView } from "@/types/PortalCardProps"
 // Next / React
@@ -117,7 +116,7 @@ export default function PortalCard({ portal, view }: PortalCardProps) {
             <p>{Number(balance).toFixed(4)} </p>
             <Image
               src={chain.icon}
-              alt="Ethereum logo"
+              alt={`${chain.name} icon`}
               width={30}
               height={30}
             />

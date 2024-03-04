@@ -88,6 +88,14 @@ export default function CreateTransactionForm({
   const [selectedToken, setSelectedToken] = useState<string>("")
   const [selectedTokenBalance, setSelectedTokenBalance] = useState<string>("")
 
+  const supportedDestinationChains = registeredChains.filter((chain: Chain) => {
+    return !!currentPortal?.chain.destinationChains.find(
+      (destinationChain: DestinationChainsData) => {
+        return destinationChain.destinationChainSelector === chain.chainSelector
+      }
+    )
+  })
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -204,19 +212,21 @@ export default function CreateTransactionForm({
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {registeredChains.map(({ name, chainSelector, icon }) => (
-                        <SelectItem key={chainSelector} value={chainSelector}>
-                          <div className="flex items-center gap-2">
-                            <Image
-                              src={icon}
-                              alt={`${name} logo`}
-                              width={25}
-                              height={25}
-                            />{" "}
-                            <div>{name}</div>
-                          </div>
-                        </SelectItem>
-                      ))}
+                      {supportedDestinationChains.map(
+                        ({ name, chainSelector, icon }) => (
+                          <SelectItem key={chainSelector} value={chainSelector}>
+                            <div className="flex items-center gap-2">
+                              <Image
+                                src={icon}
+                                alt={`${name} logo`}
+                                width={25}
+                                height={25}
+                              />{" "}
+                              <div>{name}</div>
+                            </div>
+                          </SelectItem>
+                        )
+                      )}
                     </SelectContent>
                   </Select>
                   <FormDescription>
